@@ -18,6 +18,8 @@ void error_warning(char *reason){
 }
 
 void server_init(server_t *server){
+	size_t i;
+
 	bzero(server, sizeof(server_t));
 
 	if( (server->fd = socket_tcp_listen((struct sockaddr_in *)&server->addr, 8080))
@@ -28,6 +30,9 @@ void server_init(server_t *server){
 
 	server->pfd.events = POLLIN;
 	server->pfd.fd = server->fd;
+
+	for(i = 0; i < CLIENT_MAX; i++) {
+	}
 }
 
 client_t *server_next_client(server_t *server){
@@ -35,6 +40,7 @@ client_t *server_next_client(server_t *server){
 
 	for(i = 0; i < CLIENT_MAX; i++) {
 		if(server->clients[i].status == CLIENT_INACTIVE) {
+			server->clients[i].pfd = &server->client_pfds[i];
 			return &server->clients[i];
 		}
 	}
@@ -110,12 +116,39 @@ void server_handle_write(server_t *server, client_t *client){
 	SERVER_WRITE(server, client);
 }
 
-void server_handle_client(server_t *server, client_t *client){
-	int events;
-	client->pfd.events = POLLIN | POLLOUT;
-	client->pfd.fd = client->fd;
+int server_poll_clients(server_t *server){
+	return poll(server->client_pfds, CLIENT_MAX, CLIENT_TIMEOUT); 
+}
 
-	switch( poll(&client->pfd, 1, CLIENT_TIMEOUT) ) {
+void server_handle_client_events(server_t *server, client_t *client){
+	int events;
+
+	events = client->pfd->revents;
+
+	if(events & POLLERR)
+		return server_handle_error(server, client);
+
+	if(events & POLLHUP)
+		return server_handle_closed(server, client);
+
+	if(events & POLLNVAL)
+		return server_handle_invalid(server, client); 
+
+	if(events & POLLOUT)
+		if(client->status == CLIENT_ACTIVE)
+			server_handle_write(server, client);
+
+	if(events & POLLIN)
+		if(client->status == CLIENT_ACTIVE)
+			server_handle_read(server, client);
+
+}
+
+void server_handle_client(server_t *server, client_t *client){
+	client->pfd->events = POLLIN | POLLOUT;
+	client->pfd->fd = client->fd;
+
+	switch( poll(client->pfd, 1, CLIENT_TIMEOUT) ) {
 	case -1:
 		error_warning("server_handle_client:poll");
 		break;
@@ -123,20 +156,7 @@ void server_handle_client(server_t *server, client_t *client){
 		WARNING("client poll timeout");
 		break;
 	default:
-		events = client->pfd.revents;
-		if(events & POLLERR)
-			return server_handle_error(server, client);
-		if(events & POLLHUP)
-			return server_handle_closed(server, client);
-		if(events & POLLNVAL)
-			return server_handle_invalid(server, client); 
-		if(events & POLLOUT)
-			if(client->status == CLIENT_ACTIVE)
-				server_handle_write(server, client);
-		if(events & POLLIN)
-			if(client->status == CLIENT_ACTIVE)
-				server_handle_read(server, client);
-		break;
+		server_handle_client_events(server, client);
 	}
 }
 

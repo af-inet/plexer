@@ -40,7 +40,6 @@ void response(server_t *server, client_t *client){
 
 	if(client->bytes_wrote == 0){
 		server_write(server, client, resp, strlen(resp));
-
 		printf("wrote: %lu/%lu\n", client->bytes_wrote, strlen(resp));
 	}
 

@@ -12,7 +12,7 @@ printf("WARNING: %s:%d %s", __FILE__, __LINE__, msg "\n") \
 
 struct client_t {
 	struct sockaddr addr;
-	struct pollfd pfd;
+	struct pollfd *pfd;
 	int fd;
 	int events;
 	int status;
