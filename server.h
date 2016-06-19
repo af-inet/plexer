@@ -37,6 +37,11 @@ struct server_t {
 	struct sockaddr addr;
 	size_t active_clients;
 	int fd;
+	int running;
+
+	void (*event_read) (struct server_t *, struct client_t *);
+	void (*event_write) (struct server_t *, struct client_t *);
+
 };
 
 typedef struct client_t client_t;
@@ -70,13 +75,15 @@ void server_handle_write(server_t *server, client_t *client);
 
 void server_handle_client(server_t *server, client_t *client);
 
-void server_register_read( void (*callback)(server_t *, client_t *) );
+void server_register_read(server_t *server, void (*callback)(server_t *, client_t *) );
 
-void server_register_write( void (*callback)(server_t *, client_t *) );
+void server_register_write(server_t *server, void (*callback)(server_t *, client_t *) );
 
 ssize_t server_write(server_t *server, client_t *client, char *buf, size_t size);
 
 ssize_t server_read(server_t *server, client_t *client, char *buf, size_t size);
+
+void server_client_shutdown(server_t *server, client_t *client);
 
 void server_run();
 

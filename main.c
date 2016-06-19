@@ -43,16 +43,15 @@ void response(server_t *server, client_t *client){
 		//printf("wrote: %lu/%lu\n", client->bytes_wrote, strlen(resp));
 	}
 
-	shutdown(client->fd, SHUT_RDWR);
-	close(client->fd);
-	server_client_inactive(server, client);
+	server_client_shutdown(server, client);
 }
 
 int main(int argc, char *argv[]){
 	server_t server;
-
-	server_register_write(&response);
-	server_register_read(&request);
+	
+	server_init(&server);
+	server_register_write(&server, &response);
+	server_register_read(&server, &request);
 	server_run(&server);
 
 	return 0;
