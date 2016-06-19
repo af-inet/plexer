@@ -11,6 +11,11 @@ int socket_error(int sock){
 	return SOCKET_ERROR;
 }
 
+int socket_ntop(char *dest, struct sockaddr *addr) {
+	struct sockaddr_in *addr_in = addr;
+	inet_ntop(AF_INET, &addr_in->sin_addr, dest, INET_ADDRSTRLEN);
+}
+
 int socket_tcp_listen(struct sockaddr_in *addr, int port){
 	int sockfd;
 	int ONE;

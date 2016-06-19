@@ -15,6 +15,10 @@
 
 #define SOCKET_ERROR (-1)
 
+typedef char addrstr_t[INET_ADDRSTRLEN];
+
+int socket_ntop(char *dest, struct sockaddr *addr);
+
 void socket_die(char *reason);
 
 int socket_error(int sock);
