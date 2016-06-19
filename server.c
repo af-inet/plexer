@@ -1,8 +1,6 @@
 #include "server.h"
 #include "socket.h"
-
-#define SERVER_TIMEOUT (10)
-#define CLIENT_TIMEOUT (10)
+#include "settings.h"
 
 static void (*SERVER_READ) (server_t *, client_t *);
 static void (*SERVER_WRITE) (server_t *, client_t *);
@@ -18,21 +16,16 @@ void error_warning(char *reason){
 }
 
 void server_init(server_t *server){
-	size_t i;
-
 	bzero(server, sizeof(server_t));
 
 	if( (server->fd = socket_tcp_listen((struct sockaddr_in *)&server->addr, 8080))
 		== SOCKET_ERROR )
 	{
-		error_fatal("server_init:socket_tcp_listen");
+		FATAL("server_init socket_tcp_listen");
 	}
 
 	server->pfd.events = POLLIN;
 	server->pfd.fd = server->fd;
-
-	for(i = 0; i < CLIENT_MAX; i++) {
-	}
 }
 
 client_t *server_next_client(server_t *server){
@@ -48,9 +41,16 @@ client_t *server_next_client(server_t *server){
 	return NULL;
 }
 
-void server_client_active(server_t *server, client_t *client){
+// initialize client state
+void server_client_init(client_t *client){
 	client->status = CLIENT_ACTIVE;
+	client->pfd->fd = client->fd;
+	client->pfd->events = POLLIN | POLLOUT;
+}
+
+void server_client_active(server_t *server, client_t *client){
 	server->active_clients++;
+	server_client_init(client);
 }
 
 void server_client_inactive(server_t *server, client_t *client){
@@ -65,7 +65,7 @@ void server_accept_blocking(server_t *server){
 	client->fd = accept(server->fd, &client->addr, &sockaddr_len);
 	
 	if( client->fd == SOCKET_ERROR ) {
-		error_warning("server_accept_blocking:accept");
+		ERROR("server_accept_blocking accept");
 	}else{
 		server_client_active(server, client);
 	}
@@ -76,17 +76,17 @@ int server_accept_nonblocking(server_t *server){
 
 	switch( result = poll(&server->pfd, 1, SERVER_TIMEOUT) ){
 	case -1:
-		error_warning("server_accept_nonblocking:poll");
+		ERROR("server_accept_nonblocking poll");
 		break;
 	case  0:
 		// timeout
-		WARNING("server poll timeout");
+		WARNING("server_accept_nonblocking poll timeout");
 		break;
 	default:
 		if(server->pfd.revents & POLLIN) {
 			server_accept_blocking(server);
 		}else{
-			WARNING("server poll revents");
+			WARNING("server_accept_nonblocking poll revents");
 		}
 	}
 	
@@ -114,6 +114,14 @@ void server_handle_read(server_t *server, client_t *client){
 
 void server_handle_write(server_t *server, client_t *client){
 	SERVER_WRITE(server, client);
+}
+
+void server_register_read( void (*callback)(server_t *, client_t *) ){
+	SERVER_READ = callback;
+}
+
+void server_register_write( void (*callback)(server_t *, client_t *) ){
+	SERVER_WRITE = callback;
 }
 
 int server_poll_clients(server_t *server){
@@ -145,15 +153,12 @@ void server_handle_client_events(server_t *server, client_t *client){
 }
 
 void server_handle_client(server_t *server, client_t *client){
-	client->pfd->events = POLLIN | POLLOUT;
-	client->pfd->fd = client->fd;
-
 	switch( poll(client->pfd, 1, CLIENT_TIMEOUT) ) {
 	case -1:
-		error_warning("server_handle_client:poll");
+		ERROR("server_handle_client poll");
 		break;
 	case  0:
-		WARNING("client poll timeout");
+		WARNING("server_handle_client poll timeout");
 		break;
 	default:
 		server_handle_client_events(server, client);
@@ -182,21 +187,13 @@ ssize_t server_write(server_t *server, client_t *client, char *buf, size_t size)
 	return result;
 }
 
-void server_register_read( void (*callback)(server_t *, client_t *) ){
-	SERVER_READ = callback;
-}
-
-void server_register_write( void (*callback)(server_t *, client_t *) ){
-	SERVER_WRITE = callback;
-}
-
 void server_run(server_t *server){
 	size_t i;
 	server_init(server);
 	while(1){
 		server_accept_nonblocking(server);
 		if( server->active_clients ) {
-			for(i=0; i<32; i++){
+			for(i=0; i < (CLIENT_MAX - server->active_clients - 1); i++){
 				if( !(server_accept_nonblocking(server) > 0) ) {
 					break;
 				}
@@ -206,9 +203,18 @@ void server_run(server_t *server){
 			server_accept_blocking(server);
 		}
 		printf("active clients: %lu\n", server->active_clients);
-		for(i = 0; i < CLIENT_MAX; i++){
-			if(server->clients[i].status == CLIENT_ACTIVE) {
-				server_handle_client(server, &server->clients[i]);
+		switch( server_poll_clients(server) ){
+		case -1:
+			ERROR("server_run server_poll_clients");
+			break;
+		case  0:
+			WARNING("server_run poll timeout");
+			break;
+		default:
+			for(i = 0; i < CLIENT_MAX; i++){
+				if(server->clients[i].status == CLIENT_ACTIVE) {
+					server_handle_client_events(server, &server->clients[i]);
+				}
 			}
 		}
 	}

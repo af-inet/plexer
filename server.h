@@ -2,13 +2,22 @@
 #define PLXR_SERVER_H
 
 #include "socket.h"
+#include "settings.h"
 
-#define CLIENT_MAX    (256)
 #define CLIENT_ACTIVE   (1)
 #define CLIENT_INACTIVE (0)
 
 #define WARNING(msg) \
 printf("WARNING: %s:%d %s", __FILE__, __LINE__, msg "\n") \
+
+#define ERROR(msg) \
+printf("ERROR: %s:%d %s", __FILE__, __LINE__, msg "\n"); \
+perror(msg) \
+
+#define FATAL(msg) \
+printf("FATAL: %s:%d %s", __FILE__, __LINE__, msg "\n"); \
+perror(msg); \
+exit(EXIT_FAILURE) \
 
 struct client_t {
 	struct sockaddr addr;

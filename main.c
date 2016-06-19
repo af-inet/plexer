@@ -34,13 +34,13 @@ void request(server_t *server, client_t *client){
 void response(server_t *server, client_t *client){
 	const char *resp = 
 		"HTTP/1.1 200 OK\n"
-		"Content-Length: 4\n\n"
-		"TEST\n"
+		"Content-Length: 14\n\n"
+		"<h1>test</h1>\n"
 	;
 
 	if(client->bytes_wrote == 0){
 		server_write(server, client, resp, strlen(resp));
-		printf("wrote: %lu/%lu\n", client->bytes_wrote, strlen(resp));
+		//printf("wrote: %lu/%lu\n", client->bytes_wrote, strlen(resp));
 	}
 
 	shutdown(client->fd, SHUT_RDWR);
