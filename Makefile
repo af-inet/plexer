@@ -1,8 +1,8 @@
 TARGET  = plexer
-OBJ     = main.o server.o socket.o table.o
+OBJ     = main.o server.o socket.o table.o http.o
 CC      = gcc
 CFLAGS  = -g -Wall -I.
-HEADERS = socket.h server.h table.h settings.h
+HEADERS = socket.h server.h table.h settings.h http.h
 
 .PHONY: default all clean
 
