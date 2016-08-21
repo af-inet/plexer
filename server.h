@@ -47,10 +47,6 @@ struct server_t {
 typedef struct client_t client_t;
 typedef struct server_t server_t;
 
-void error_fatal(char *reason);
-
-void error_warning(char *reason);
-
 void server_init(server_t *server);
 
 client_t *server_next_client(server_t *server);

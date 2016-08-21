@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define HTTP_MAX_HEADERS (40)
+
 struct http_line {
     char *method;
     char *uri;
@@ -15,8 +17,6 @@ struct http_header {
     char *key;
     char *value;
 };
-
-#define HTTP_MAX_HEADERS (40)
 
 struct http_request {
     struct http_line line;
@@ -37,4 +37,4 @@ int plxr_http_parse_request(struct http_request *dest, char *src);
  */
 void plxr_http_print(struct http_request *req);
 
-#endif
+#endif /* PLXR_HTTP_H */

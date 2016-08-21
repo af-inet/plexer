@@ -82,7 +82,7 @@ int plxr_http_parse_header(struct http_header *dest, char *src, char **end) {
 int plxr_http_parse_end(char *src) {
     EXPECT_TOKEN(CR);
     EXPECT_TOKEN(LF);
-    return (*src) == '\0';
+    return 1;
 }
 
 int plxr_http_parse_request(struct http_request *dest, char *src) {
@@ -105,7 +105,7 @@ void plxr_http_print(struct http_request *req) {
     size_t i;
     
     printf(
-        "{%s : %s : %s}\n",
+        "%s %s %s\n",
         req->line.method,
         req->line.uri,
         req->line.version
@@ -113,9 +113,10 @@ void plxr_http_print(struct http_request *req) {
 
     for(i=0; i < req->headers_len; i++)
         printf(
-            "[%s: %s]\n",
+            "%s: %s\n",
             req->headers[i].key,
             req->headers[i].value
         );
+	printf("\n");
      
 }

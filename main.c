@@ -18,20 +18,17 @@ void request(server_t *server, client_t *client){
 
 	switch(result){
 	case -1:
-		perror("read");
-		//server_client_inactive(server, client);
+		/* read error */
 		break;
 	case 0:
-		printf("closing connection\n");
-		//shutdown(client->fd, SHUT_RDWR);
-		//close(client->fd);
-	    server_client_inactive(server, client);
+		/* read nothing */
+		server_client_shutdown(server, client);
 		break;
 	default:
-		printf("read: %lu\n", client->bytes_read);
 
         if( plxr_http_parse_request(&req, buf) )
-            plxr_http_print(&req);
+			return;
+            //plxr_http_print(&req);
         else
             printf("parse bad\n");
 
@@ -41,25 +38,28 @@ void request(server_t *server, client_t *client){
 
 void response(server_t *server, client_t *client){
 	const char *resp = 
-		"HTTP/1.1 200 OK\n"
-		"Content-Length: 14\n\n"
+		"HTTP/1.1 200 OK\r\n"
+		"Content-Length: 14\r\n"
+		"\r\n"
 		"<h1>test</h1>\n"
 	;
 
-	if(client->bytes_wrote == 0){
+	if(
+		(client->bytes_wrote == 0) &&
+		(client->bytes_read > 0)
+	){
 		server_write(server, client, resp, strlen(resp));
+		server_client_shutdown(server, client);
 		//printf("wrote: %lu/%lu\n", client->bytes_wrote, strlen(resp));
 	}
-
-	//server_client_shutdown(server, client);
 }
 
 int main(int argc, char *argv[]){
 	server_t server;
 	
 	server_init(&server);
-	server_register_write(&server, &response);
-	server_register_read(&server, &request);
+	server.event_read = &request;
+	server.event_write = &response;
 	server_run(&server);
 
 	return 0;
