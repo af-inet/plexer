@@ -5,11 +5,33 @@
 #include <stdint.h>
 #include <string.h>
 
+/* This is a dead simple implementation
+ * of a hash table using Paul Hsieh's
+ * SuperFastHash function.
+ *
+ * Collisions are handled by imposing a max
+ * number of entries for a given table.
+ *
+ * This way, even in the incredibly unlikely
+ * scenario where all your hashs land in the
+ * same bucket, the table still 'works'.
+ */
+
 typedef struct {
 	void    *data;
 	uint32_t hash;
 } htable_entry_t;
 
+/* Tables must be filled out with a pointer to an entry array,
+ * and the length of the array (size, in elements, not bytes).
+ *
+ * ex:
+ * 	htable_t table;
+ * 	htable_entry_t buffer[32 * 32] = {0};
+ *
+ * 	table.size = 32;
+ * 	table.entries = buffer;
+ */
 typedef struct {
 	htable_entry_t *entries;
 	size_t size;

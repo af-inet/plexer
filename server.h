@@ -28,6 +28,7 @@ struct client_t {
 	int attempts;
 	size_t bytes_wrote;
 	size_t bytes_read;
+	char *data;
 };
 
 struct server_t {

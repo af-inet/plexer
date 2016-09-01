@@ -1,13 +1,18 @@
 TARGET  = plexer
-OBJ     = main.o server.o socket.o table.o http.o
+OBJ     = main.o server.o socket.o table.o http.o file.o
 CC      = gcc
 CFLAGS  = -g -Wall -I.
-HEADERS = socket.h server.h table.h settings.h http.h
+HEADERS = socket.h server.h table.h settings.h http.h file.h
 
-.PHONY: default all clean
+.PHONY: default all clean test
 
 default: $(TARGET)
-all: default
+all: $(TARGET) $(OBJ)
+
+test: $(TARGET) $(HEADERS) $(OBJ)
+	$(MAKE) all
+	cd test && $(MAKE) test
+	./test/test
 
 run: $(TARGET)
 	./$(TARGET)
