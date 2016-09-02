@@ -199,7 +199,7 @@ ssize_t server_read(server_t *server, client_t *client, char *buf, size_t size){
 	return result;
 }
 
-ssize_t server_write(server_t *server, client_t *client, char *buf, size_t size){
+ssize_t server_write(server_t *server, client_t *client, const char *buf, size_t size){
 	ssize_t result;
 	result = write(client->fd, buf, size);
 
