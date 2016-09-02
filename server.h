@@ -79,7 +79,7 @@ void server_register_read(server_t *server, void (*callback)(server_t *, client_
 
 void server_register_write(server_t *server, void (*callback)(server_t *, client_t *) );
 
-ssize_t server_write(server_t *server, client_t *client, char *buf, size_t size);
+ssize_t server_write(server_t *server, client_t *client, const char *buf, size_t size);
 
 ssize_t server_read(server_t *server, client_t *client, char *buf, size_t size);
 

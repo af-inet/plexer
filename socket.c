@@ -11,8 +11,8 @@ int socket_error(int sock){
 	return SOCKET_ERROR;
 }
 
-char *socket_ntop(char *dest, struct sockaddr *addr) {
-	struct sockaddr_in *addr_in = addr;
+const char *socket_ntop(char *dest, struct sockaddr *addr) {
+	struct sockaddr_in *addr_in = (struct sockaddr_in *) addr;
 	return inet_ntop(AF_INET, &addr_in->sin_addr, dest, INET_ADDRSTRLEN);
 }
 
