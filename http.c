@@ -4,6 +4,55 @@
 
 #include "http.h"
 
+/* Maps every possible hex character value to its numerical value or -1 if invalid.
+ * ex. 'F' -> 15
+ */
+static const int hex_conversion_table[256] = {
+   [0 ... 255] = -1,
+   ['0'] = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+   ['A'] = 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
+   ['a'] = 0xA, 0xB, 0xC, 0xD, 0xE, 0xF,
+};
+
+/* Converts a 2 digit hex string at `src` to a numerical value at `dest`.
+ * ex. "A0" -> 160
+ *
+ * on success `dest` is set to the result of the conversion, and 0 is returned.
+ * on error, -1 is returned.
+ */
+int plxr_unescape_hex(unsigned char *dest, unsigned char *src) {
+    int a, b;
+    a = hex_conversion_table[src[0]];
+    b = hex_conversion_table[src[1]];
+    if ( (a == -1) || (b == -1) ) {
+        return -1;
+    }
+    *dest = ((a & 0xFF) << 4) + (b & 0xFF);
+    return 0;
+}
+
+ssize_t plxr_unescape_url(char *dest, size_t count, const char *src) {
+    unsigned char byte;
+    char *limit, *start;
+    start = dest;
+    limit = dest + count;
+
+    while ( (byte = *src) != '\0' ) {
+        if ( byte == '%' ) {
+            if( plxr_unescape_hex(&byte, (unsigned char *)src+1) == -1 ) {
+                return -1;
+            }
+            src += 2;
+        }
+        if ( dest < limit ) {
+            *(dest++) = byte;
+        }
+        src += 1;
+    }
+
+    return dest-start;
+}
+
 /* === RESPONSE PARSING === */
 
 /* RFC 2616 Section 6.1.1

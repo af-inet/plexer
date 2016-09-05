@@ -39,4 +39,13 @@ int plxr_http_parse(struct plxr_http_request *dest, char *src);
  */
 void plxr_http_print(struct plxr_http_request *req);
 
+/* Unescapes a url at `src`, writing it to `dest`, no more than `count` bytes.
+ * ex. "https%3A%2F%2Fwww.google.com%2F" -> "https://www.google.com/"
+ *
+ * If an invalid hex code is encountered, -1 is returned.
+ * Otherwise the size of the unescaped url is returned, regardless of if
+ * it exceeded `count` or not.
+ */
+ssize_t plxr_unescape_url(char *dest, size_t count, const char *src);
+
 #endif /* PLXR_HTTP_H */
