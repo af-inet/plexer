@@ -2,4 +2,4 @@
 #
 # Concurrent connection stress test.
 PORT=8080
-siege -c 200 -r 10 http://localhost:$PORT/
+siege -c 200 -r 1 http://127.0.0.1:$PORT/

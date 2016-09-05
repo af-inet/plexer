@@ -1,13 +1,18 @@
 TARGET  = plexer
-OBJ     = main.o server.o socket.o table.o http.o
 CC      = gcc
 CFLAGS  = -g -Wall -I. -Wno-initializer-overrides
-HEADERS = socket.h server.h table.h settings.h http.h
+OBJ     = main.o core.o socket.o table.o http.o file.o connection.o pool.o
+HEADERS =        core.h socket.h table.h http.h file.h connection.h pool.h settings.h
 
-.PHONY: default all clean
+.PHONY: default all clean test
 
 default: $(TARGET)
-all: default
+all: $(TARGET) $(OBJ)
+
+test: $(TARGET) $(HEADERS) $(OBJ)
+	$(MAKE) all
+	cd test && $(MAKE) test
+	./test/test
 
 run: $(TARGET)
 	./$(TARGET)

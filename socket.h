@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <arpa/inet.h>
 
 #define SOCKET_ERROR (-1)
 

@@ -1,30 +1,6 @@
 #include "table.h"
 #include "SuperFastHash.h"
 
-/*
- * This is a dead simple implementation
- * of a hash table using Paul Hsieh's
- * SuperFastHash function.
- *
- * Collisions are handled by imposing a max
- * number of entries for a given table.
- *
- * This way, even in the incredibly unlikely
- * scenario where all your hashs land in the
- * same bucket, the table still 'works'.
- *
- * The table associates arbitrary length
- * buffers (strings, for example) with
- * a (void *) pointer.
- *
- * The basic operations supported are
- *     insert, remove, find, has
- *
- * Supplying NULL, or any otherwise invalid
- * key is undefined behavior.
- */
-
-
 uint32_t htable_hash(char *data, size_t size){
 	// Credit to Paul Hsieh.
 	return SuperFastHash(data, size);

@@ -5,37 +5,39 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct http_line {
-    char *method;
-    char *uri;
-    char *version;
-};
+#define HTTP_MAX_HEADERS (40)
 
-struct http_header {
+struct plxr_http_header {
     char *key;
     char *value;
 };
 
-#define HTTP_MAX_HEADERS (40)
-
-struct http_request {
-    struct http_line line;
-    struct http_header headers[HTTP_MAX_HEADERS];
+struct plxr_http_request {
+	char *method;
+    char *uri;
+    char *version;
+    struct plxr_http_header headers[HTTP_MAX_HEADERS];
     size_t headers_len;
 };
 
+int plxr_http_response(
+    char *dest, size_t size,
+    int status_code,
+    int content_length
+);
+
 /* Parses a *mutable* string buffer `src` 
- * into a struct http_request `dest`
+ * into a struct plxr_http_request `dest`
  *
  * returns
  *  1 on success
  *  0 on failure
  */
-int plxr_http_parse_request(struct http_request *dest, char *src);
+int plxr_http_parse(struct plxr_http_request *dest, char *src);
 
 /* printf()'s a request and its headers.
  */
-void plxr_http_print(struct http_request *req);
+void plxr_http_print(struct plxr_http_request *req);
 
 /* Unescapes a url at `src`, writing it to `dest`, no more than `count` bytes.
  * ex. "https%3A%2F%2Fwww.google.com%2F" -> "https://www.google.com/"
@@ -46,4 +48,4 @@ void plxr_http_print(struct http_request *req);
  */
 ssize_t plxr_unescape_url(char *dest, size_t count, const char *src);
 
-#endif
+#endif /* PLXR_HTTP_H */
