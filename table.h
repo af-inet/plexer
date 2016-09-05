@@ -24,6 +24,7 @@ typedef struct {
 
 /* Tables must be filled out with a pointer to an entry array,
  * and the length of the array (size, in elements, not bytes).
+ * The buffer must have (size^2) elements allocated.
  *
  * ex:
  * 	htable_t table;

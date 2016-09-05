@@ -50,7 +50,7 @@ void plxr_readdir() {
 }
 
 
-char *plxr_alloc_file(char *filename, off_t *size){
+char *plxr_alloc_file(const char *filename, off_t *size){
 	struct stat info;
 	char *buffer;
 	int fd;

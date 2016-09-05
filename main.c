@@ -6,10 +6,11 @@
 #include <poll.h>
 
 #include "socket.h"
-#include "server.h"
+#include "core.h"
 #include "http.h"
 #include "table.h"
 #include "file.h"
+#include "connection.h"
 
 // Define a static table.
 #define TABLE_SIZE (128)
@@ -34,28 +35,34 @@ void table_insert(const char *filename) {
 #define READ_ERROR (-1)
 #define READ_ZERO   (0)
 
-void request(server_t *server, client_t *client){
+void request(struct plxr_ctx_t *ctx, struct plxr_conn_t *conn){
 	char buf[4096] = {0};
+	ssize_t ret;
     struct plxr_http_request req;
 
-	switch( server_read(server, client, buf, 4095) ){
+	switch( (ret=read(conn->fd, buf, 4095)) ){
 
-	case READ_ERROR: /* fallthrough */
+	case READ_ERROR:
+		/* fallthrough */
 	case READ_ZERO:
-		server_client_shutdown(server, client);
+		plxr_conn_close(conn);
+		plxr_conn_free(ctx->pool, conn);
 		break;
 
 	default:
         if( plxr_http_parse(&req, buf) ) {
 			if ( strlen(req.uri) > 0 ) {
 				printf("Requested: [%s]\n", req.uri+1); // cut off "/"
-				client->data = htable_gets(&g_table, req.uri+1);
+				conn->data = htable_gets(&g_table, req.uri+1);
 			}
         } else {
             printf("Invalid HTTP Request\n");
 		}
 		break;	
 	}
+
+	if (ret > 0)
+		conn->bytes_read += ret;
 }
 
 const char *html_404 = 
@@ -66,31 +73,42 @@ const char *html_404 =
 	"</html>"
 ;
 
-void response(server_t *server, client_t *client){
+void response(struct plxr_ctx_t *ctx, struct plxr_conn_t *conn){
 	size_t data_len, header_len;
-	char header[4096], *data;
+	char header[4096];
+	const char *data;
 
 	// If we've already wrote or haven't read, don't bother responding.
-	if( (client->bytes_wrote != 0) || (client->bytes_read == 0) ) {
+	if( (conn->bytes_wrote != 0) || (conn->bytes_read == 0) ) {
 		return;
 	}
 
-	if ( client->data == NULL )
+	if ( conn->data == NULL )
 		data = html_404;
 	else
-		data = client->data;
+		data = conn->data;
 
 	data_len = strlen(data);
 	header_len = plxr_http_response(header, sizeof(header), 404, data_len);
 
-	server_write(server, client, header, header_len);
-	server_write(server, client, data, data_len);
+	write(conn->fd, header, header_len);
+	write(conn->fd, data, data_len);
 
-	server_client_shutdown(server, client);
+	plxr_conn_close(conn);
+	plxr_conn_free(ctx->pool, conn);
+}
+
+void callback_handler(struct plxr_ctx_t *ctx, struct plxr_conn_t *conn) {
+	if ( conn->pfd->revents & POLLIN ) {
+		request(ctx, conn);
+	}
+	if ( conn->pfd->revents & POLLOUT ) {
+		response(ctx, conn);
+	}
 }
 
 int main(int argc, char *argv[]){
-	server_t server;
+	struct plxr_ctx_t ctx;
 
 	// Load the current directory into a hash table.
 	g_table.size = TABLE_SIZE;
@@ -99,10 +117,9 @@ int main(int argc, char *argv[]){
 	plxr_ntfw(&table_insert);
 
 	// initialize the server
-	server_init(&server);
-	server.event_read = &request;
-	server.event_write = &response;
-	server_run(&server);
+	plxr_init(&ctx);
+	ctx.event_callback = &callback_handler;
+	plxr_run(&ctx);
 
 	return 0;
 }

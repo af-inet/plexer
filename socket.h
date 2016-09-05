@@ -12,12 +12,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <arpa/inet.h>
 
 #define SOCKET_ERROR (-1)
 
 typedef char addrstr_t[INET_ADDRSTRLEN];
 
-char *socket_ntop(char *dest, struct sockaddr *addr);
+const char *socket_ntop(char *dest, struct sockaddr *addr);
 
 void socket_die(char *reason);
 

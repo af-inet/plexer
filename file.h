@@ -15,7 +15,7 @@
 /* Reads the contents of a file to a malloc()'d, null terminated string.
  * returns NULL on error.
  */
-char *plxr_alloc_file(char *filename, off_t *size);
+char *plxr_alloc_file(const char *filename, off_t *size);
 
 void plxr_ntfw(void (*callback)(const char *filename));
 
