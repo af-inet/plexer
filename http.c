@@ -53,12 +53,6 @@ ssize_t plxr_unescape_url(char *dest, size_t count, const char *src) {
     return dest-start;
 }
 
-/* === RESPONSE PARSING === */
-
-/* RFC 2616 Section 6.1.1
- * http://www.rfc-base.org/txt/rfc-2616.txt
- * Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
- */
 const char *plxr_http_phrase(int status_code) {
     switch(status_code){
     case 100: return "Continue";
@@ -104,6 +98,8 @@ const char *plxr_http_phrase(int status_code) {
     default: return "Invalid Status Code";
     }
 }
+
+/* === RESPONSE PARSING === */
 
 /* RFC 2616 Section 6.1
  * http://www.rfc-base.org/txt/rfc-2616.txt
