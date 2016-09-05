@@ -15,8 +15,3 @@ make
 
 ./plexer
 ```
-
-## why
-
-There are a lot of interesting problems to solve in building a web server, http parsing, sockets, concurrency, caching, etc.
-Building your own server from scratch means you get to tackle those problems yourself, and learn in the process.
