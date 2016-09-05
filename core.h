@@ -9,6 +9,8 @@
 #include "connection.h"
 #include "pool.h"
 
+/* The plxr context, think of one `struct plxr_ctx_t` as one server.
+ */
 struct plxr_ctx_t {
 
 	/* listener */
@@ -27,8 +29,14 @@ struct plxr_ctx_t {
 
 };
 
+/* Configures plxr to begin accepting connections.
+ */
 void plxr_init(struct plxr_ctx_t *ctx);
 
+/* Executes the core logic, event_callback should be set up
+ * before this is called, or connections will be accepted
+ * and never handled.
+ */
 void plxr_run(struct plxr_ctx_t *ctx);
 
 #endif /* PLXR_CORE_H */

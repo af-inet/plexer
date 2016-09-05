@@ -1,8 +1,8 @@
 TARGET  = plexer
-OBJ     = main.o core.o socket.o table.o http.o file.o connection.o pool.o
 CC      = gcc
 CFLAGS  = -g -Wall -I.
-HEADERS = socket.h core.h table.h settings.h http.h file.h connection.h pool.h
+OBJ     = main.o core.o socket.o table.o http.o file.o connection.o pool.o
+HEADERS =        core.h socket.h table.h http.h file.h connection.h pool.h settings.h
 
 .PHONY: default all clean test
 
