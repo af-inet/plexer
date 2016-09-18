@@ -18,7 +18,7 @@ struct plxr_ctx_t {
 	struct pollfd pfd;
 	struct sockaddr addr;
 
-	/* client pool */
+	/* connection pool */
 	struct plxr_pool_t pool[1];
 
 	/* boolean, is the server running? */

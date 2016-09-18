@@ -25,17 +25,11 @@ int plxr_conn_accept(struct plxr_conn_t *conn, int fd) {
 	// TODO: check if POLLHUP / POLLERR actually 
 	// need to be set or if they're implied.
 	conn->pfd->events = POLLIN | POLLOUT | POLLHUP | POLLERR;
-
-	conn->active = 1;
 	
 	return 0;
 }
 
 void plxr_conn_close(struct plxr_conn_t *conn) {
-	if ( conn->active == 0 ) {
-		WARNING("attempted to close an inactive connection");
-		return;
-	}
 	if ( shutdown(conn->fd, SHUT_RDWR) == -1 ) {
 		ERROR("shutdown");
 	}

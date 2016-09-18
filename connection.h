@@ -17,7 +17,6 @@ struct plxr_conn_t {
 	int attempts;
 	size_t bytes_wrote;
 	size_t bytes_read;
-	int active;
 
 	/* keeping track of free/alloc'd objects */
 	int used;
@@ -39,7 +38,7 @@ struct plxr_conn_t {
  */
 int plxr_conn_accept(struct plxr_conn_t *conn, int fd);
 
-/* Close a connection, marking it as inactive.
+/* Close a connection.
  */
 void plxr_conn_close(struct plxr_conn_t *conn);
 
