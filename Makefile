@@ -10,8 +10,8 @@ default: all
 all: $(TARGET) $(OBJ) test
 
 test: $(TARGET) $(HEADERS) $(OBJ)
-	@$(MAKE) $(TARGET)
-	@cd test && $(MAKE) test
+	$(MAKE) $(TARGET)
+	cd test && $(MAKE) test
 	./test/test
 
 run: $(TARGET)

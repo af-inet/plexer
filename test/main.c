@@ -82,17 +82,13 @@ void test_path() {
     CTEST_STREQ(buf, "www.google.com");
 }
 
-#define SUBTEST(cb) \
-printf("\n-- %4s --\n", #cb); \
-cb()
-
 int main(int argc, char *argv[]){
 
-    SUBTEST(test_http);
+    CTEST_SUB(test_http);
 
-    SUBTEST(test_scheme);
+    CTEST_SUB(test_scheme);
 
-    SUBTEST(test_path);
+    CTEST_SUB(test_path);
 
-	return 0;
+    CTEST_RETURN();
 }
