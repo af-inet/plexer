@@ -297,6 +297,8 @@ char *plxr_http_expect_token(char *src, char sep) {
 	return NULL;
 }
 
+// TODO: Refactor to use functions instead of preprocessor.
+
 #define TERM_TOKEN(sep) \
 if( (src = plxr_http_term_token(src, sep)) == NULL ) { return 0; } \
 
