@@ -9,6 +9,19 @@
 #define LF	('\n')
 #define COLON (':')
 
+/* NOTE:
+ *   There are two methodologies for parsing buffers used here:
+ *
+ *   1. Take a string and chop it up into seperate sub-strings
+ *      by placing null-bytes at the delimeters.
+ *
+ *   2. Copy out segments of a string into seperate buffers.
+ *
+ *   Not really sure which method is best... so we use both
+ *   in different scenarios. In the future we should consider
+ *   refactoring so that we only use one consistent strategy.
+ */
+
 static inline int ALPHA(char c) {
     return ((c >= 'a' && c <= 'z')
         || (c >= 'A' && c <= 'Z'));
@@ -105,9 +118,8 @@ ssize_t plxr_parse_#name (char *dest, size_t count, const char *src) {\
 
 ssize_t plxr_unescape_url(char *dest, size_t count, const char *src) {
 	unsigned char byte;
-	char *limit, *start;
+	char *start;
 	start = dest;
-	limit = dest + count;
 
 	while ( (byte = *src) != '\0' ) {
 		if ( byte == '%' ) {
@@ -116,13 +128,13 @@ ssize_t plxr_unescape_url(char *dest, size_t count, const char *src) {
 			}
 			src += 2;
 		}
-		if ( dest < limit ) {
+		if ( (dest - start) < count ) {
 			*(dest++) = byte;
 		}
 		src += 1;
 	}
 
-	return dest-start;
+	return (dest - start);
 }
 
 /* https://tools.ietf.org/html/rfc3986
@@ -142,14 +154,14 @@ ssize_t plxr_parse_scheme(char *dest, size_t count, const char *src) {
 			if ( src[1] == '/' && src[2] == '/' ) {
 				return (dest - start) + 3; /* end of scheme; return the length */
 			} else {
-				return -1;
+				return -1; /* end of scheme with missing delimeters; scheme is invalid */
 			}
 		}
 		if ( *src == '\0' ) {
-			return -1; /* end of string */
+			return -1; /* end of string; scheme is invalid */
 		}
 		if ( !SCHEME(*src) ) {
-			return -1; /* invalid character */
+			return -1; /* invalid character; scheme is  invalid */
 		}
 		if ( (dest - start) < count ) {
 			*dest = *src;
@@ -185,7 +197,7 @@ ssize_t plxr_parse_path(char *dest, size_t count, const char *src) {
 		src++;
 	}
 
-	return -1; // ditto
+	return -1; // shouldn't get here
 }
 
 const char *plxr_http_phrase(int status_code) {
