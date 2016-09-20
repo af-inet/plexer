@@ -48,4 +48,7 @@ void plxr_http_print(struct plxr_http_request *req);
  */
 ssize_t plxr_unescape_url(char *dest, size_t count, const char *src);
 
+ssize_t plxr_parse_scheme(char *dest, size_t count, const char *src);
+ssize_t plxr_parse_path(char *dest, size_t count, const char *src);
+
 #endif /* PLXR_HTTP_H */

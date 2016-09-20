@@ -5,9 +5,11 @@
 #include "test.h"
 #include "../http.h"
 
+#define SIZE (256)
+
 void test_http() {
 	struct plxr_http_request req;
-	char buf[4096] = {0};
+	char buf[SIZE] = {0};
 	char *raw =
 		"GET / HTTP/1.1\r\n"
 		"Host: www.google.com\r\n"
@@ -34,10 +36,63 @@ void test_http() {
 	CTEST_STREQ(req.headers[2].value, "*/*");
 }
 
+void test_scheme() {
+    char buf[SIZE] = {0};
+    ssize_t res;
+
+    bzero(buf, SIZE);
+
+    res = plxr_parse_scheme(buf, SIZE, "http://");
+    CTEST_ASSERT( res > 0 );
+    CTEST_STREQ(buf, "http");
+
+    bzero(buf, SIZE);
+
+    plxr_parse_scheme(buf, SIZE, "https://");
+    CTEST_STREQ(buf, "https");
+
+    bzero(buf, SIZE);
+
+    res = plxr_parse_scheme(buf, SIZE, "https//");
+    CTEST_ASSERT(res == -1);
+}
+
+void test_path() {
+    char buf[SIZE];
+    const char *src_a = "http://www.google.com/?a=b";
+    const char *src_b = "http://www.google.com";
+    ssize_t res;
+
+    bzero(buf, SIZE);
+
+    res = plxr_parse_scheme(buf, SIZE, src_a);
+    CTEST_ASSERT( res > 0 );
+    CTEST_STREQ(buf, "http");
+    res = plxr_parse_path(buf, SIZE, src_a+res);
+    CTEST_ASSERT(res > 0);
+    CTEST_STREQ(buf, "www.google.com/");
+
+    bzero(buf, SIZE);
+
+    res = plxr_parse_scheme(buf, SIZE, src_b);
+    CTEST_ASSERT( res > 0 );
+    CTEST_STREQ(buf, "http");
+    res = plxr_parse_path(buf, SIZE, src_b+res);
+    CTEST_ASSERT(res > 0);
+    CTEST_STREQ(buf, "www.google.com");
+}
+
+#define SUBTEST(cb) \
+printf("\n-- %4s --\n", #cb); \
+cb()
+
 int main(int argc, char *argv[]){
-	
-	printf("\n-- http --\n");
-	test_http();
+
+    SUBTEST(test_http);
+
+    SUBTEST(test_scheme);
+
+    SUBTEST(test_path);
 
 	return 0;
 }
