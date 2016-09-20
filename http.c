@@ -9,24 +9,57 @@
 #define LF	('\n')
 #define COLON (':')
 
-#define ALPHA(c) \
-((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+static inline int ALPHA(char c) {
+    return ((c >= 'a' && c <= 'z')
+        || (c >= 'A' && c <= 'Z'));
+}
 
-#define DIGIT(c) \
-((c >= '0') && (c <= '9'))
+static inline int DIGIT(char c) {
+    return ((c >= '0') && (c <= '9'));
+}
 
-#define SCHEME(c) \
-(ALPHA(c) || DIGIT(c) || (c == '-') || (c == '+') || (c == '.'))
+static inline int SCHEME(char c) {
+    return ALPHA(c) 
+        || DIGIT(c)
+        || (c == '-')
+        || (c == '+')
+        || (c == '.')
+    ;
+}
 
-#define UNRESERVED(c) \
-( ALPHA(c) || DIGIT(c) || (c == '-') || (c == '.') || (c == '_') || (c == '~') )
+static inline int UNRESERVED(char c) {
+    return ALPHA(c)
+        || DIGIT(c)
+        || (c == '-')
+        || (c == '.')
+        || (c == '_')
+        || (c == '~')
+    ;
+}
 
-#define SUBDELIMS(c) \
-(  (c == '!') || (c == '$') || (c == '&') || (c == '\'') || (c == '(') || (c == ')') \
-|| (c == '*') || (c == '+') || (c == ',') || (c == ';')  || (c == '=') )
+static inline int SUBDELIMS(char c) {
+    return (c == '!')
+        || (c == '$')
+        || (c == '&')
+        || (c == '\'')
+        || (c == '(')
+        || (c == ')')
+        || (c == '*')
+        || (c == '+')
+        || (c == ',')
+        || (c == ';')
+        || (c == '=')
+    ;
+}
 
-#define PCHAR(c) \
-( UNRESERVED(c) || (c == '%') || SUBDELIMS(c) || ( c == ':') || (c == '@') )
+static inline int PCHAR(char c) {
+    return UNRESERVED(c)
+        || (c == '%')
+        || SUBDELIMS(c)
+        || ( c == ':')
+        || (c == '@')
+    ;
+}
 
 /* Maps every possible hex character value to its numerical value or -1 if invalid.
  * ex. 'F' -> 15

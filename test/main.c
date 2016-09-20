@@ -82,7 +82,7 @@ void test_path() {
     CTEST_STREQ(buf, "www.google.com");
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
     CTEST_SUB(test_http);
 
