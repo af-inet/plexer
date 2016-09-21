@@ -4,6 +4,76 @@
 
 #include "http.h"
 
+#define SPACE (' ')
+#define CR	('\r')
+#define LF	('\n')
+#define COLON (':')
+
+/* NOTE:
+ *   There are two methodologies for parsing buffers used here:
+ *
+ *   1. Take a string and chop it up into seperate sub-strings
+ *      by placing null-bytes at the delimeters.
+ *
+ *   2. Copy out segments of a string into seperate buffers.
+ *
+ *   Not really sure which method is best... so we use both
+ *   in different scenarios. In the future we should consider
+ *   refactoring so that we only use one consistent strategy.
+ */
+
+static inline int ALPHA(char c) {
+    return ((c >= 'a' && c <= 'z')
+        || (c >= 'A' && c <= 'Z'));
+}
+
+static inline int DIGIT(char c) {
+    return ((c >= '0') && (c <= '9'));
+}
+
+static inline int SCHEME(char c) {
+    return ALPHA(c) 
+        || DIGIT(c)
+        || (c == '-')
+        || (c == '+')
+        || (c == '.')
+    ;
+}
+
+static inline int UNRESERVED(char c) {
+    return ALPHA(c)
+        || DIGIT(c)
+        || (c == '-')
+        || (c == '.')
+        || (c == '_')
+        || (c == '~')
+    ;
+}
+
+static inline int SUBDELIMS(char c) {
+    return (c == '!')
+        || (c == '$')
+        || (c == '&')
+        || (c == '\'')
+        || (c == '(')
+        || (c == ')')
+        || (c == '*')
+        || (c == '+')
+        || (c == ',')
+        || (c == ';')
+        || (c == '=')
+    ;
+}
+
+static inline int PCHAR(char c) {
+    return UNRESERVED(c)
+        || (c == '%')
+        || SUBDELIMS(c)
+        || ( c == ':')
+        || (c == '@')
+    ;
+}
+
 /* Maps every possible hex character value to its numerical value or -1 if invalid.
  * ex. 'F' -> 15
  */
@@ -31,11 +101,25 @@ int plxr_unescape_hex(unsigned char *dest, unsigned char *src) {
 	return 0;
 }
 
+// TODO
+/*
+#define DEFINE_PARSE(name, body)\
+ssize_t plxr_parse_#name (char *dest, size_t count, const char *src) {\
+	char *start;\
+	start = src;\
+	\
+	while( *src ) {\]
+		body\
+	}\
+\
+	return -1;\
+}\
+*/
+
 ssize_t plxr_unescape_url(char *dest, size_t count, const char *src) {
 	unsigned char byte;
-	char *limit, *start;
+	char *start;
 	start = dest;
-	limit = dest + count;
 
 	while ( (byte = *src) != '\0' ) {
 		if ( byte == '%' ) {
@@ -44,13 +128,76 @@ ssize_t plxr_unescape_url(char *dest, size_t count, const char *src) {
 			}
 			src += 2;
 		}
-		if ( dest < limit ) {
+		if ( (dest - start) < count ) {
 			*(dest++) = byte;
 		}
 		src += 1;
 	}
 
-	return dest-start;
+	return (dest - start);
+}
+
+/* https://tools.ietf.org/html/rfc3986
+ * Section 3.
+ * scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+ */
+ssize_t plxr_parse_scheme(char *dest, size_t count, const char *src) {
+	char *start;
+	start = dest;
+
+	if ( !ALPHA(src[0]) )
+		return -1;
+
+	for(;;) {
+
+		if ( *src == ':' ) {
+			if ( src[1] == '/' && src[2] == '/' ) {
+				return (dest - start) + 3; /* end of scheme; return the length */
+			} else {
+				return -1; /* end of scheme with missing delimeters; scheme is invalid */
+			}
+		}
+		if ( *src == '\0' ) {
+			return -1; /* end of string; scheme is invalid */
+		}
+		if ( !SCHEME(*src) ) {
+			return -1; /* invalid character; scheme is  invalid */
+		}
+		if ( (dest - start) < count ) {
+			*dest = *src;
+		}
+
+		dest++;
+		src++;
+	}
+
+	return -1; // shouldn't get here
+}
+
+ssize_t plxr_parse_path(char *dest, size_t count, const char *src) {
+	char *start;
+	start = dest;
+
+	for(;;) {
+
+		if ( *src == '?' ) {
+			return (dest - start);
+		}
+		if ( *src == '\0' ) {
+			return (dest - start);
+		}
+		if ( (!PCHAR(*src)) && (*src != '/') ) {
+			return -1;
+		}
+		if ( (dest - start) < count ) {
+			*dest = *src;
+		}
+
+		dest++;
+		src++;
+	}
+
+	return -1; // shouldn't get here
 }
 
 const char *plxr_http_phrase(int status_code) {
@@ -150,10 +297,7 @@ char *plxr_http_expect_token(char *src, char sep) {
 	return NULL;
 }
 
-#define SPACE (' ')
-#define CR	('\r')
-#define LF	('\n')
-#define COLON (':')
+// TODO: Refactor to use functions instead of preprocessor.
 
 #define TERM_TOKEN(sep) \
 if( (src = plxr_http_term_token(src, sep)) == NULL ) { return 0; } \

@@ -6,11 +6,11 @@ HEADERS =        core.h socket.h table.h http.h file.h connection.h pool.h setti
 
 .PHONY: default all clean test
 
-default: $(TARGET)
-all: $(TARGET) $(OBJ)
+default: all
+all: $(TARGET) $(OBJ) test
 
 test: $(TARGET) $(HEADERS) $(OBJ)
-	$(MAKE) all
+	$(MAKE) $(TARGET)
 	cd test && $(MAKE) test
 	./test/test
 
