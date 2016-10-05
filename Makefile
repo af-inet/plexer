@@ -1,8 +1,8 @@
 TARGET  = plexer
 CC      = gcc
 CFLAGS  = -g -Wall -I. -Wno-initializer-overrides
-OBJ     = main.o core.o socket.o table.o http.o file.o connection.o pool.o
-HEADERS =        core.h socket.h table.h http.h file.h connection.h pool.h settings.h
+OBJ     = main.o core.o socket.o table.o http.o file.o connection.o pool.o event.o
+HEADERS =        core.h socket.h table.h http.h file.h connection.h pool.h event.h settings.h
 
 .PHONY: default all clean test
 
@@ -31,3 +31,4 @@ clean:
 	$(RM) $(TARGET)-debug
 	$(RM) $(TARGET)-debug.dSYM
 	$(RM) $(TARGET)
+
