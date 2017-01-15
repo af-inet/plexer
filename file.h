@@ -8,7 +8,17 @@
 char *
 plxr_alloc_file(const char *filename, off_t *size);
 
-char *
-plxr_readdir();
+/* returns 0 if directory `dirname` contains file `filename`
+ * returns 1 if it does not
+ */
+int
+plxr_in_dir(DIR *dir, char *filename);
+
+/* returns 0 if directory `dirname` contains file `filename`
+ * returns 1 if it does not
+ * returns -1 on error
+ */
+int
+plxr_in_dir_recursive(char *dirname, char *filename);
 
 #endif /* PLXR_FILE_H */

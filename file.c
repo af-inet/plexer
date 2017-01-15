@@ -43,20 +43,57 @@ error_exit:
 	return NULL;
 }
 
-char *
-plxr_readdir()
+static int nftw_cb_result;
+static char *nftw_cb_parameter;
+
+int
+nftw_cb(const char *name, const struct stat *ptr, int flag, struct FTW *sftw)
+{
+	if ( (flag==FTW_F) || (flag==FTW_D))
+	{
+		if (strcmp(name, ".") == 0)
+			return 0; /* exclude "." */
+
+		name += 2; /* cut of the leading "./" */
+
+		if (strcmp(name, nftw_cb_parameter) == 0)
+		{
+			nftw_cb_result = 0;
+			return 1; /* found what we're looking for, exit */
+		}
+	}
+
+	return 0;
+}
+
+int
+plxr_in_dir_recursive(char *dirname, char *filename)
+{
+	nftw_cb_result = 1; /* will be set to `0` if the file is found */
+	nftw_cb_parameter = filename;
+
+	if (nftw(dirname, &nftw_cb, 1, FTW_PHYS | FTW_MOUNT) == -1)
+	{
+		return -1;
+	}
+
+	return nftw_cb_result;
+}
+
+int
+plxr_in_dir(DIR *dir, char *filename)
 {
 	struct dirent *ent;
-	DIR *dir;
-
-	dir = opendir(".");
-
-	if (dir == NULL)
-		return NULL;
 
 	while (( ent = readdir(dir) ))
-		printf("%s\n", ent->d_name);
+	{
+		if (strcmp(ent->d_name, ".") == 0)
+			continue; /* exclude "." */
+		if (strcmp(ent->d_name, "..") == 0)
+			continue; /* exclude ".." */
+		if (strcmp(filename, ent->d_name) == 0)
+			return 0; /* file found */
+	}
 
-	closedir(dir);
-	return NULL;
+	return 1; /* file not found */
 }
