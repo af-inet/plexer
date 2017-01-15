@@ -5,7 +5,7 @@
 ## build / run
 
 ```
-clone https://github.com/DavidHargat/plexer
+clone https://github.com/af-inet/plexer
 
 cd plexer
 
