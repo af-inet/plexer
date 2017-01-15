@@ -1,4 +1,4 @@
-# plexer (WIP)
+# plexer
 
 `plexer` is a lil C http server created for fun :)
 

@@ -13,7 +13,7 @@
  *   There are two methodologies for parsing buffers used here:
  *
  *   1. Take a string and chop it up into seperate sub-strings
- *      by placing null-bytes at the delimeters.
+ *	  by placing null-bytes at the delimeters.
  *
  *   2. Copy out segments of a string into seperate buffers.
  *
@@ -23,55 +23,55 @@
  */
 
 static inline int ALPHA(char c) {
-    return ((c >= 'a' && c <= 'z')
-        || (c >= 'A' && c <= 'Z'));
+	return ((c >= 'a' && c <= 'z')
+		|| (c >= 'A' && c <= 'Z'));
 }
 
 static inline int DIGIT(char c) {
-    return ((c >= '0') && (c <= '9'));
+	return ((c >= '0') && (c <= '9'));
 }
 
 static inline int SCHEME(char c) {
-    return ALPHA(c) 
-        || DIGIT(c)
-        || (c == '-')
-        || (c == '+')
-        || (c == '.')
-    ;
+	return ALPHA(c)
+		|| DIGIT(c)
+		|| (c == '-')
+		|| (c == '+')
+		|| (c == '.')
+	;
 }
 
 static inline int UNRESERVED(char c) {
-    return ALPHA(c)
-        || DIGIT(c)
-        || (c == '-')
-        || (c == '.')
-        || (c == '_')
-        || (c == '~')
-    ;
+	return ALPHA(c)
+		|| DIGIT(c)
+		|| (c == '-')
+		|| (c == '.')
+		|| (c == '_')
+		|| (c == '~')
+	;
 }
 
 static inline int SUBDELIMS(char c) {
-    return (c == '!')
-        || (c == '$')
-        || (c == '&')
-        || (c == '\'')
-        || (c == '(')
-        || (c == ')')
-        || (c == '*')
-        || (c == '+')
-        || (c == ',')
-        || (c == ';')
-        || (c == '=')
-    ;
+	return (c == '!')
+		|| (c == '$')
+		|| (c == '&')
+		|| (c == '\'')
+		|| (c == '(')
+		|| (c == ')')
+		|| (c == '*')
+		|| (c == '+')
+		|| (c == ',')
+		|| (c == ';')
+		|| (c == '=')
+	;
 }
 
 static inline int PCHAR(char c) {
-    return UNRESERVED(c)
-        || (c == '%')
-        || SUBDELIMS(c)
-        || ( c == ':')
-        || (c == '@')
-    ;
+	return UNRESERVED(c)
+		|| (c == '%')
+		|| SUBDELIMS(c)
+		|| ( c == ':')
+		|| (c == '@')
+	;
 }
 
 /* Maps every possible hex character value to its numerical value or -1 if invalid.
@@ -100,21 +100,6 @@ int plxr_unescape_hex(unsigned char *dest, unsigned char *src) {
 	*dest = ((a & 0xFF) << 4) + (b & 0xFF);
 	return 0;
 }
-
-// TODO
-/*
-#define DEFINE_PARSE(name, body)\
-ssize_t plxr_parse_#name (char *dest, size_t count, const char *src) {\
-	char *start;\
-	start = src;\
-	\
-	while( *src ) {\]
-		body\
-	}\
-\
-	return -1;\
-}\
-*/
 
 ssize_t plxr_unescape_url(char *dest, size_t count, const char *src) {
 	unsigned char byte;
@@ -371,7 +356,7 @@ int plxr_http_parse(struct plxr_http_request *dest, char *src) {
 
 void plxr_http_print(struct plxr_http_request *req) {
 	size_t i;
-	
+
 	printf(
 		"%s %s %s\n",
 		req->method,
@@ -386,5 +371,5 @@ void plxr_http_print(struct plxr_http_request *req) {
 			req->headers[i].value
 		);
 	printf("\n");
-	 
+
 }

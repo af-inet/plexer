@@ -17,7 +17,7 @@ void test_http() {
 		"Accept: */*\r\n"
 		"\r\n"
 	;
-	
+
 	memcpy(buf, raw, strlen(raw));
 
 	CTEST_ASSERT(plxr_http_parse(&req, buf) == 1);
@@ -37,58 +37,58 @@ void test_http() {
 }
 
 void test_scheme() {
-    char buf[SIZE] = {0};
-    ssize_t res;
+	char buf[SIZE] = {0};
+	ssize_t res;
 
-    bzero(buf, SIZE);
+	bzero(buf, SIZE);
 
-    res = plxr_parse_scheme(buf, SIZE, "http://");
-    CTEST_ASSERT( res > 0 );
-    CTEST_STREQ(buf, "http");
+	res = plxr_parse_scheme(buf, SIZE, "http://");
+	CTEST_ASSERT( res > 0 );
+	CTEST_STREQ(buf, "http");
 
-    bzero(buf, SIZE);
+	bzero(buf, SIZE);
 
-    plxr_parse_scheme(buf, SIZE, "https://");
-    CTEST_STREQ(buf, "https");
+	plxr_parse_scheme(buf, SIZE, "https://");
+	CTEST_STREQ(buf, "https");
 
-    bzero(buf, SIZE);
+	bzero(buf, SIZE);
 
-    res = plxr_parse_scheme(buf, SIZE, "https//");
-    CTEST_ASSERT(res == -1);
+	res = plxr_parse_scheme(buf, SIZE, "https//");
+	CTEST_ASSERT(res == -1);
 }
 
 void test_path() {
-    char buf[SIZE];
-    const char *src_a = "http://www.google.com/?a=b";
-    const char *src_b = "http://www.google.com";
-    ssize_t res;
+	char buf[SIZE];
+	const char *src_a = "http://www.google.com/?a=b";
+	const char *src_b = "http://www.google.com";
+	ssize_t res;
 
-    bzero(buf, SIZE);
+	bzero(buf, SIZE);
 
-    res = plxr_parse_scheme(buf, SIZE, src_a);
-    CTEST_ASSERT( res > 0 );
-    CTEST_STREQ(buf, "http");
-    res = plxr_parse_path(buf, SIZE, src_a+res);
-    CTEST_ASSERT(res > 0);
-    CTEST_STREQ(buf, "www.google.com/");
+	res = plxr_parse_scheme(buf, SIZE, src_a);
+	CTEST_ASSERT( res > 0 );
+	CTEST_STREQ(buf, "http");
+	res = plxr_parse_path(buf, SIZE, src_a+res);
+	CTEST_ASSERT(res > 0);
+	CTEST_STREQ(buf, "www.google.com/");
 
-    bzero(buf, SIZE);
+	bzero(buf, SIZE);
 
-    res = plxr_parse_scheme(buf, SIZE, src_b);
-    CTEST_ASSERT( res > 0 );
-    CTEST_STREQ(buf, "http");
-    res = plxr_parse_path(buf, SIZE, src_b+res);
-    CTEST_ASSERT(res > 0);
-    CTEST_STREQ(buf, "www.google.com");
+	res = plxr_parse_scheme(buf, SIZE, src_b);
+	CTEST_ASSERT( res > 0 );
+	CTEST_STREQ(buf, "http");
+	res = plxr_parse_path(buf, SIZE, src_b+res);
+	CTEST_ASSERT(res > 0);
+	CTEST_STREQ(buf, "www.google.com");
 }
 
 int main(int argc, char *argv[]) {
 
-    CTEST_SUB(test_http);
+	CTEST_SUB(test_http);
 
-    CTEST_SUB(test_scheme);
+	CTEST_SUB(test_scheme);
 
-    CTEST_SUB(test_path);
+	CTEST_SUB(test_path);
 
-    CTEST_RETURN();
+	CTEST_RETURN();
 }

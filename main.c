@@ -1,125 +1,78 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+#include <string.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <poll.h>
 
-#include "socket.h"
-#include "core.h"
-#include "http.h"
-#include "table.h"
 #include "file.h"
-#include "connection.h"
+#include "http.h"
+#include "socket.h"
 
-// Define a static table.
-#define TABLE_SIZE (128)
-static htable_t       g_table;
-static htable_entry_t g_entries[TABLE_SIZE * TABLE_SIZE];
+int serve_file(int sockfd, char *filename)
+{
+	char headers[4096];
+	size_t headers_len;
+	char *data;
+	off_t data_len;
 
-// Load a file into the table.
-void table_insert(const char *filename) {
-	char *buf;
-	ssize_t size;
-	if ( (buf = plxr_alloc_file(filename, &size)) )
-	{
-		filename += 2; // cut off "./"
-		printf("loaded [%s]\n", filename);
-		if ( htable_sets(&g_table, filename, buf) == 0 ) {
-			printf("htable_failed\n");
-			exit(EXIT_FAILURE);
+	data = plxr_alloc_file(filename, &data_len);
+
+	if (data == NULL)
+		return -1;
+
+	headers_len = plxr_http_response(
+		headers, sizeof(headers), 200, data_len);
+
+	if (headers_len > sizeof(headers))
+		return -1; /* not enough memory */
+	if (write(sockfd, headers, headers_len) != headers_len)
+		return -1; /* didn't write expected length */
+	if (write(sockfd, data, data_len) != data_len)
+		return -1; /* didn't write expected length */
+
+	return 0;
+}
+
+void handle_client(int client_fd, struct sockaddr *client_addr)
+{
+	printf("[*] client connected %s\n",
+		plxr_socket_ntop(client_addr));
+
+	if (serve_file(client_fd, "./index.html") == -1)
+		perror("serve_file");
+
+	shutdown(client_fd, SHUT_RDWR);
+	close(client_fd);
+}
+
+int main(int argc, char *argv[])
+{
+	socklen_t socklen = sizeof(struct sockaddr);
+	struct sockaddr_in listen_addr;
+	struct sockaddr client_addr;
+	int listen_fd;
+	int client_fd;
+	int port = 8080;
+
+	listen_fd = plxr_socket_listen(&listen_addr, port);
+	if (listen_fd == -1) {
+		perror("plxr_socket_listen");
+		return 1;
+	}
+	printf("[*] listening on port: %d\n", port);
+
+	do {
+		client_fd = accept(listen_fd, &client_addr, &socklen);
+		if (client_fd == -1)
+		{
+			perror("accept");
+			return 1;
 		}
+		handle_client(client_fd, &client_addr);
 	}
-}
-
-#define READ_ERROR (-1)
-#define READ_ZERO   (0)
-
-void request(struct plxr_ctx_t *ctx, struct plxr_conn_t *conn){
-	char buf[4096] = {0};
-	ssize_t ret;
-    struct plxr_http_request req;
-
-	switch( (ret=read(conn->fd, buf, 4095)) ){
-
-	case READ_ERROR:
-		/* fallthrough */
-	case READ_ZERO:
-		plxr_conn_close(conn);
-		plxr_conn_free(ctx->pool, conn);
-		break;
-
-	default:
-        if( plxr_http_parse(&req, buf) ) {
-			if ( strlen(req.uri) > 0 ) {
-				printf("Requested: [%s]\n", req.uri+1); // cut off "/"
-				conn->data = htable_gets(&g_table, req.uri+1);
-			}
-        } else {
-            printf("Invalid HTTP Request\n");
-		}
-		break;	
-	}
-
-	if (ret > 0)
-		conn->bytes_read += ret;
-}
-
-const char *html_404 = 
-	"<html>"
-	"<body>"
-	"<h1> 404 Not Found </h1>"
-	"</body>"
-	"</html>"
-;
-
-void response(struct plxr_ctx_t *ctx, struct plxr_conn_t *conn){
-	size_t data_len, header_len;
-	char header[4096];
-	const char *data;
-
-	// If we've already wrote or haven't read, don't bother responding.
-	if( (conn->bytes_wrote != 0) || (conn->bytes_read == 0) ) {
-		return;
-	}
-
-	if ( conn->data == NULL )
-		data = html_404;
-	else
-		data = conn->data;
-
-	data_len = strlen(data);
-	header_len = plxr_http_response(header, sizeof(header), 404, data_len);
-
-	write(conn->fd, header, header_len);
-	write(conn->fd, data, data_len);
-
-	plxr_conn_close(conn);
-	plxr_conn_free(ctx->pool, conn);
-}
-
-void callback_handler(struct plxr_ctx_t *ctx, struct plxr_conn_t *conn) {
-	if ( conn->pfd->revents & POLLIN ) {
-		request(ctx, conn);
-	}
-	if ( conn->pfd->revents & POLLOUT ) {
-		response(ctx, conn);
-	}
-}
-
-int main(int argc, char *argv[]){
-	struct plxr_ctx_t ctx;
-
-	// Load the current directory into a hash table.
-	g_table.size = TABLE_SIZE;
-	g_table.entries = g_entries;
-	bzero(g_entries, sizeof(g_entries));
-	plxr_ntfw(&table_insert);
-
-	// initialize the server
-	plxr_init(&ctx);
-	ctx.event_callback = &callback_handler;
-	plxr_run(&ctx);
+	while (1);
 
 	return 0;
 }

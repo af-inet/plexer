@@ -1,24 +1,14 @@
 #ifndef PLXR_FILE_H
 #define PLXR_FILE_H
 
-#define _XOPEN_SOURCE 500
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <ftw.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <string.h>
-
-/* Reads the contents of a file to a malloc()'d, null terminated string.
- * returns NULL on error.
+/* reads the contents of a file into a `malloc`d buffer
+ * returns pointer on success and sets `size` to the size of the buffer
+ * returns NULL on failure
  */
-char *plxr_alloc_file(const char *filename, off_t *size);
+char *
+plxr_alloc_file(const char *filename, off_t *size);
 
-void plxr_ntfw(void (*callback)(const char *filename));
-
-void plxr_display_info();
+char *
+plxr_readdir();
 
 #endif /* PLXR_FILE_H */

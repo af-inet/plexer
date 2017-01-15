@@ -26,7 +26,7 @@ int plxr_http_response(
 	int content_length
 );
 
-/* Parses a *mutable* string buffer `src` 
+/* Parses a *mutable* string buffer `src`
  * into a struct plxr_http_request `dest`
  *
  * returns
