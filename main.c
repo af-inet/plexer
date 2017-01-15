@@ -222,8 +222,6 @@ int handle_client(int client_fd, struct sockaddr *client_addr)
 		return -1;
 	}
 
-	plxr_http_print(&req);
-
 	if (router(client_fd, req.uri) == -1)
 	{
 		printf("router: failed\n");
