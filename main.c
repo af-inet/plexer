@@ -12,17 +12,15 @@
 #include "http.h"
 #include "socket.h"
 
-int serve_file(int sockfd, int status_code, char *filename)
+const char *html_404 =
+"<html><head></head><body><h1>file not found</h1></body></html>";
+const char *html_500 =
+"<html><head></head><body><h1>internal server error</h1></body></html>";
+
+int serve_data(int sockfd, int status_code, const char *data, size_t data_len)
 {
 	char headers[4096];
 	size_t headers_len;
-	char *data;
-	off_t data_len;
-
-	data = plxr_alloc_file(filename, &data_len);
-
-	if (data == NULL)
-		return -1;
 
 	headers_len = plxr_http_response(
 		headers, sizeof(headers), status_code, data_len);
@@ -37,14 +35,32 @@ int serve_file(int sockfd, int status_code, char *filename)
 	return 0;
 }
 
+int serve_file(int sockfd, int status_code, char *filename)
+{
+	char *data;
+	off_t data_len;
+
+	data = plxr_alloc_file(filename, &data_len);
+
+	if (data == NULL)
+		return -1;
+
+	return serve_data(sockfd, status_code, data, data_len);
+}
+
+int serve_string(int sockfd, int status_code, const char *str)
+{
+	return serve_data(sockfd, status_code, str, strlen(str));
+}
+
 int serve_404(int sockfd)
 {
-	return serve_file(sockfd, 404, "./404.html");
+	return serve_string(sockfd, 404, html_404);
 }
 
 int serve_500(int sockfd)
 {
-	return serve_file(sockfd, 500, "./500.html");
+	return serve_string(sockfd, 500, html_500);
 }
 
 int render_dir_html(char *dest, size_t size, char *dirname, DIR *dir)
