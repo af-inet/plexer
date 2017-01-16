@@ -104,8 +104,6 @@ int render_dir_html(char *dest, size_t size, char *dirname, DIR *dir)
 
 int serve_dir(int sockfd, char *dirname, DIR *dir)
 {
-	char headers[4096];
-	size_t headers_len;
 	char data[4096];
 	size_t data_len;
 
@@ -116,17 +114,7 @@ int serve_dir(int sockfd, char *dirname, DIR *dir)
 	if (data_len > sizeof(data))
 		return -1; /* not enough memory */
 
-	headers_len = plxr_http_response(
-		headers, sizeof(headers), 200, data_len);
-
-	if (headers_len > sizeof(headers))
-		return -1; /* not enough memory */
-	if (write(sockfd, headers, headers_len) != headers_len)
-		return -1; /* didn't write expected length */
-	if (write(sockfd, data, data_len) != data_len)
-		return -1; /* didn't write expected length */
-
-	return 0;
+	return serve_data(sockfd, 200, data, data_len);
 }
 
 enum {
