@@ -81,6 +81,29 @@ plxr_in_dir_recursive(char *dirname, char *filename)
 }
 
 int
+plxr_check_dir(char *dirname, DIR *dir, char *path)
+{
+	struct stat info;
+
+	switch (plxr_in_dir_recursive(dirname, path))
+	{
+	case 0:
+		if (stat(path, &info) != 0)
+			return PLX_FILE_ERR;
+		if (S_ISREG(info.st_mode))
+			return PLX_FILE_REG;
+		if (S_ISDIR(info.st_mode))
+			return PLX_FILE_DIR;
+	case 1:
+		return PLX_FILE_NOT_FOUND;
+	case -1:
+	default:
+		break;
+	}
+	return PLX_FILE_ERR;
+}
+
+int
 plxr_in_dir(DIR *dir, char *filename)
 {
 	struct dirent *ent;

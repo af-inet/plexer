@@ -21,4 +21,14 @@ plxr_in_dir(DIR *dir, char *filename);
 int
 plxr_in_dir_recursive(char *dirname, char *filename);
 
+enum {
+	PLX_FILE_ERR = -1,
+	PLX_FILE_REG = 1,
+	PLX_FILE_DIR = 2,
+	PLX_FILE_NOT_FOUND = 3
+};
+
+int
+plxr_check_dir(char *dirname, DIR *dir, char *path);
+
 #endif /* PLXR_FILE_H */
