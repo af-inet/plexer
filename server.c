@@ -27,7 +27,7 @@ plxr_serve_data(
 	const char *data,
 	size_t data_len)
 {
-	char headers[4096];
+	char headers[4096] = {0};
 	size_t headers_len;
 
 	headers_len = plxr_http_response(
@@ -153,11 +153,15 @@ plxr_serve_file_or_dir(struct plxr_connection *conn)
 	char *ptr;
 
 	path = path_buffer;
-	ptr = stpncpy(path, conn->request.uri, sizeof(path_buffer));
+	ptr = stpncpy(path_buffer, conn->request.uri, sizeof(path_buffer));
 
 	/* cut trailing slashes */
-	while( *--ptr == '/' && ptr > path )
+	while (
+		(*(--ptr) == '/') &&
+		(ptr > path_buffer))
+	{
 		*ptr = '\0';
+	}
 
 	/* serve the current directory */
 	if (strcmp("/", path) == 0)

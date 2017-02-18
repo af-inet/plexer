@@ -19,9 +19,7 @@ struct option_struct {
 
 void parse_args(int argc, char *argv[], struct option_struct *opts)
 {
-	int bflag, ch;
-
-	bflag = 0;
+	int ch;
 
 	while ((ch = getopt(argc, argv, "p:h")) != -1)
 	{
@@ -86,7 +84,7 @@ int main(int argc, char *argv[])
 			printf("plxr_connection_read: failed\n");
 
 		if (plxr_serve_file_or_dir(&conn) == -1)
-			printf("plxr_connection_read: failed\n");
+			printf("plxr_serve_file_or_dir: failed\n");
 
 		shutdown(conn.fd, SHUT_RDWR);
 		close(conn.fd);
