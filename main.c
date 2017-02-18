@@ -7,38 +7,55 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #include "server.h"
 #include "socket.h"
 #include "connection.h"
 
-struct option_struct {
+struct options {
 	char *port;
+	char verbose;
 	int help;
 };
 
-void parse_args(int argc, char *argv[], struct option_struct *opts)
+static struct options opts = {0};
+
+void parse_args(int argc, char *argv[])
 {
 	int ch;
 
-	while ((ch = getopt(argc, argv, "p:h")) != -1)
+	while ((ch = getopt(argc, argv, "p:hv")) != -1)
 	{
 		switch (ch)
 		{
+		case 'v':
+			opts.verbose = 1;
+			break;
 		case 'p':
-			opts->port = optarg;
+			opts.port = optarg;
 			break;
 		case 'h':
 		default:
-			opts->help = 1;
+			opts.help = 1;
 		}
+	}
+}
+
+void sigpipe_handler(int sig)
+{
+	if (opts.verbose) {
+		printf("[!] caught SIGPIPE\n");
 	}
 }
 
 void print_usage(char *name)
 {
 	printf(
-		"usage: %s [-h] [-p port]\n",
+		"usage: %s [-hv] [-p port]\n"
+		"  -h  display this help page\n"
+		"  -v  verbose\n"
+		"  -p  port number\n",
 		name
 	);
 }
@@ -49,18 +66,22 @@ int main(int argc, char *argv[])
 {
 	struct sockaddr_in listen_addr;
 	struct plxr_connection conn = {0};
-	struct option_struct opts = {0};
 	int listen_fd;
 	int port = 8080;
 
-	parse_args(argc, argv, &opts);
+	parse_args(argc, argv);
+
 	if (opts.help) {
 		print_usage(argc > 0 ? argv[0] : "plexer");
 		return 0;
 	}
+
 	if (opts.port) {
 		port = atoi(opts.port);
 	}
+
+	/* ignore SIGPIPE */
+	signal(SIGPIPE, sigpipe_handler);
 
 	listen_fd = plxr_socket_listen(&listen_addr, port);
 	if (listen_fd == -1) {
@@ -68,7 +89,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	printf("[*] listening on port: %d\n", port);
+	if (opts.verbose)
+		printf("[*] listening on port: %d\n", port);
 
 	do {
 		conn.fd = accept(listen_fd, &conn.addr, &socklen);
@@ -78,13 +100,16 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		printf("[*] client connected %s\n", plxr_socket_ntop(&conn.addr));
+		if (opts.verbose)
+			printf("[*] client connected %s\n", plxr_socket_ntop(&conn.addr));
 
 		if (plxr_connection_read(&conn) == -1)
-			printf("plxr_connection_read: failed\n");
+			if (opts.verbose)
+				printf("[!] plxr_connection_read: failed\n");
 
 		if (plxr_serve_file_or_dir(&conn) == -1)
-			printf("plxr_serve_file_or_dir: failed\n");
+			if (opts.verbose)
+				printf("[!] plxr_serve_file_or_dir: failed\n");
 
 		shutdown(conn.fd, SHUT_RDWR);
 		close(conn.fd);

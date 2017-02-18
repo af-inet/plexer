@@ -152,16 +152,12 @@ plxr_serve_file_or_dir(struct plxr_connection *conn)
 	char *path;
 	char *ptr;
 
-	path = path_buffer;
 	ptr = stpncpy(path_buffer, conn->request.uri, sizeof(path_buffer));
+	path = path_buffer;
 
 	/* cut trailing slashes */
-	while (
-		(*(--ptr) == '/') &&
-		(ptr > path_buffer))
-	{
+	for (; (ptr > path_buffer) && ptr == '/'; --ptr)
 		*ptr = '\0';
-	}
 
 	/* serve the current directory */
 	if (strcmp("/", path) == 0)
