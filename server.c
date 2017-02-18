@@ -155,9 +155,12 @@ plxr_serve_file_or_dir(struct plxr_connection *conn)
 	ptr = stpncpy(path_buffer, conn->request.uri, sizeof(path_buffer));
 	path = path_buffer;
 
+	/* `ptr` points to the null terminator, lets roll that back */
+	ptr -= 1;
 	/* cut trailing slashes */
-	for (; (ptr > path_buffer) && ptr == '/'; --ptr)
+	for (; (ptr > path_buffer) && ((*ptr) == '/'); --ptr) {
 		*ptr = '\0';
+	}
 
 	/* serve the current directory */
 	if (strcmp("/", path) == 0)
