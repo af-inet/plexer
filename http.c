@@ -239,6 +239,7 @@ const char *plxr_http_phrase(int status_code) {
  */
 const char *HTTP_RESP_FORMAT =
 	"HTTP/1.1 %d %s\r\n"
+	"Content-Type: %s\r\n"
 	"Content-Length: %d\r\n"
 	"\r\n"
 ;
@@ -246,6 +247,7 @@ const char *HTTP_RESP_FORMAT =
 int plxr_http_response(
 	char *dest, size_t size,
 	int status_code,
+	char *content_type,
 	int content_length
 ){
 	return snprintf(
@@ -254,6 +256,7 @@ int plxr_http_response(
 		HTTP_RESP_FORMAT,
 		status_code,
 		plxr_http_phrase(status_code),
+		content_type,
 		content_length
 	);
 }

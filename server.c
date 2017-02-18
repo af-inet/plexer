@@ -31,7 +31,7 @@ plxr_serve_data(
 	size_t headers_len;
 
 	headers_len = plxr_http_response(
-		headers, sizeof(headers), status_code, data_len);
+		headers, sizeof(headers), status_code, "text/html", data_len);
 
 	if (headers_len > sizeof(headers))
 		return -1; /* not enough memory */
