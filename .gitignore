@@ -3,3 +3,4 @@ test/test
 plexer
 plexer-debug
 tags
+*.swp
