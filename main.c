@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	parse_args(argc, argv);
 
 	if (opts.help) {
-		print_usage(argc > 0 ? argv[0] : "plexer");
+		print_usage(argv[0]);
 		return 0;
 	}
 
@@ -82,6 +82,9 @@ int main(int argc, char *argv[])
 
 	/* ignore SIGPIPE */
 	signal(SIGPIPE, sigpipe_handler);
+
+	/* disable buffered output */
+	setvbuf(stdout, NULL, _IONBF, 0);
 
 	listen_fd = plxr_socket_listen(&listen_addr, port);
 	if (listen_fd == -1) {
