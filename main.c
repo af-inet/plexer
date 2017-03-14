@@ -12,6 +12,7 @@
 #include "server.h"
 #include "socket.h"
 #include "connection.h"
+#include "error.h"
 
 struct options {
 	char *port;
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
 {
 	struct sockaddr_in listen_addr;
 	struct plxr_connection conn = {0};
-	int listen_fd;
+	int listen_fd, ret;
 	int port = 8080;
 
 	parse_args(argc, argv);
@@ -96,6 +97,8 @@ int main(int argc, char *argv[])
 		printf("[*] listening on port: %d\n", port);
 
 	do {
+		bzero(&conn, sizeof(conn));
+		ret = 0;
 		conn.fd = accept(listen_fd, &conn.addr, &socklen);
 
 		if (conn.fd == -1) {
@@ -106,13 +109,21 @@ int main(int argc, char *argv[])
 		if (opts.verbose)
 			printf("[*] client connected %s\n", plxr_socket_ntop(&conn.addr));
 
-		if (plxr_connection_read(&conn) == -1)
-			if (opts.verbose)
-				printf("[!] plxr_connection_read: failed\n");
+		ret = plxr_connection_read(&conn);
 
-		if (plxr_serve_file_or_dir(&conn) == -1)
-			if (opts.verbose)
-				printf("[!] plxr_serve_file_or_dir: failed\n");
+		if (ret) {
+			if (opts.verbose) {
+				printf("[!] plxr error: %s\n", plxr_strerror(ret));
+			}
+		}
+		else {
+			ret = plxr_serve_file_or_dir(&conn);
+			if (ret) {
+				if (opts.verbose) {
+					printf("[!] plxr error: %s\n", plxr_strerror(ret));
+				}
+			}
+		}
 
 		shutdown(conn.fd, SHUT_RDWR);
 		close(conn.fd);

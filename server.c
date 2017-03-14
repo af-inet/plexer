@@ -13,6 +13,7 @@
 #include "socket.h"
 #include "http.h"
 #include "connection.h"
+#include "error.h"
 
 static const char *plxr_html_404 =
 "<html><head></head><body><h1>file not found</h1></body></html>";
@@ -29,16 +30,21 @@ plxr_serve_data(
 {
 	char headers[4096] = {0};
 	size_t headers_len;
+	int ret;
 
 	headers_len = plxr_http_response(
 		headers, sizeof(headers), status_code, "text/html", data_len);
 
 	if (headers_len > sizeof(headers))
-		return -1; /* not enough memory */
-	if (write(conn->fd, headers, headers_len) != headers_len)
-		return -1; /* didn't write expected length */
-	if (write(conn->fd, data, data_len) != data_len)
-		return -1; /* didn't write expected length */
+		return PLX_OUT_OF_MEMORY;
+
+	ret = plxr_socket_write_timeout(conn->fd, headers, headers_len, 250);
+	if (ret != headers_len)
+		return ret;
+
+	ret = plxr_socket_write_timeout(conn->fd, data, data_len, 250);
+	if (ret != data_len)
+		return ret;
 
 	return 0;
 }
@@ -53,9 +59,8 @@ plxr_serve_file(
 	off_t data_len;
 
 	data = plxr_alloc_file(filename, &data_len);
-
 	if (data == NULL)
-		return -1;
+		return PLX_ALLOC_FILE_FAILED;
 
 	return plxr_serve_data(conn, status_code, data, data_len);
 }
@@ -116,7 +121,7 @@ plxr_render_dir_html(char *dest, size_t size, char *path, DIR *dir)
 			ent->d_name);
 
 		if (count > sizeof(li_buffer))
-			return -1; /* not enough memory */
+			return PLX_OUT_OF_MEMORY;
 	}
 
 	return snprintf(dest, size, page_template, li_buffer);
@@ -126,14 +131,14 @@ int
 plxr_serve_dir(struct plxr_connection *conn, char *path, DIR *dir)
 {
 	char data[4096];
-	size_t data_len;
+	int data_len;
 
 	data_len = plxr_render_dir_html(data, sizeof(data), path, dir);
 
-	if (data_len == -1)
-		return -1; /* not enough memory */
+	if (data_len < 0)
+		return data_len;
 	if (data_len > sizeof(data))
-		return -1; /* not enough memory */
+		return PLX_OUT_OF_MEMORY;
 
 	return plxr_serve_data(conn, 200, data, data_len);
 }

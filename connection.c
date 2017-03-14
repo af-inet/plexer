@@ -4,6 +4,8 @@
 #include <unistd.h>
 
 #include "connection.h"
+#include "socket.h"
+#include "error.h"
 
 /* since we're single threaded, we can use the same buffer for everyone */
 static char request_buffer[4096];
@@ -11,15 +13,16 @@ static char request_buffer[4096];
 int
 plxr_connection_read(struct plxr_connection *conn)
 {
-	ssize_t req_len;
+	ssize_t ret;
 	bzero(request_buffer, sizeof(request_buffer));
 
-	req_len = read(conn->fd, request_buffer, sizeof(request_buffer));
+	ret = plxr_socket_read_timeout(
+		conn->fd, request_buffer, sizeof(request_buffer), 500);
 
-	if (req_len == -1)
-		return -1; /* read failed */
+	if (ret < 0)
+		return ret; /* read failed */
 	if (plxr_http_parse(&conn->request, request_buffer) == 0)
-		return -1; /* parse failed */
+		return PLX_PARSE_FAILED; /* parse failed */
 
 	return 0;
 }

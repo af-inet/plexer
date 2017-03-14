@@ -4,7 +4,6 @@
 #include <stdio.h>
 
 #include <string.h>
-
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -14,6 +13,8 @@
 #include <errno.h>
 #include <poll.h>
 #include <arpa/inet.h>
+
+#include "error.h"
 
 int
 plxr_socket_listen(struct sockaddr_in *addr, int port)
@@ -46,6 +47,83 @@ plxr_socket_listen(struct sockaddr_in *addr, int port)
 error:
 	close(sockfd); /* avoid leaking descriptors */
 	return -1;
+}
+
+/* TODO: handle EAGAIN, EWOULDBLOCK. see write(2) */
+int
+plxr_socket_write_timeout(
+	int fd,
+	const char *data,
+	size_t data_len,
+	int timeout_milliseconds
+){
+	int ret;
+	struct pollfd pfd = {
+		.fd = fd,
+		.events = POLLOUT,
+		.revents = 0
+	};
+
+	switch (poll(&pfd, 1, timeout_milliseconds)) {
+
+	case -1:
+		return PLX_POLL_FAILED;
+
+	case 0:
+		return PLX_WRITE_TIMEOUT; /* timeout */
+
+	case 1: /* successful poll(2) */
+		ret = write(fd, data, data_len);
+
+		if (ret == -1)
+			return PLX_WRITE_FAILED;
+		if (ret != data_len)
+			return PLX_BAD_WRITE; /* wrote less than the desired nbytes */
+
+		return ret; /* success! return the number of bytes written */
+
+	default:
+		break;
+	}
+
+	return PLX_UNEXPECTED;
+}
+
+int
+plxr_socket_read_timeout(
+	int fd,
+	char *data,
+	size_t data_max,
+	int timeout_milliseconds
+){
+	int ret;
+	struct pollfd pfd = {
+		.fd = fd,
+		.events = POLLIN,
+		.revents = 0
+	};
+
+	switch (poll(&pfd, 1, timeout_milliseconds)) {
+
+	case -1:
+		return PLX_POLL_FAILED;
+
+	case 0:
+		return PLX_READ_TIMEOUT;
+
+	case 1: /* successful poll(2) */
+		ret = read(fd, (void *)data, data_max);
+
+		if (ret == -1)
+			return PLX_READ_FAILED;
+
+		return ret;
+
+	default:
+		break;
+	}
+
+	return PLX_UNEXPECTED;
 }
 
 static char ntop_buffer[INET_ADDRSTRLEN];
