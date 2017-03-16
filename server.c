@@ -95,7 +95,7 @@ compose_path(char *path, char *filename)
 }
 
 int
-plxr_render_dir_html(char *dest, size_t size, char *path, DIR *dir)
+plxr_render_dir_html(char *dest, size_t size, char *path, DIR *dir, char *host)
 {
 	const char *page_template =
 		"<!doctype html>"
@@ -104,7 +104,7 @@ plxr_render_dir_html(char *dest, size_t size, char *path, DIR *dir)
 	;
 
 	const char *li_template =
-		"<li><a href=\"http://localhost:8080/%s\">%s</a></li>"
+		"<li><a href=\"http://%s/%s\">%s</a></li>"
 	;
 
 	struct dirent *ent;
@@ -117,6 +117,7 @@ plxr_render_dir_html(char *dest, size_t size, char *path, DIR *dir)
 			&li_buffer[count],
 			sizeof(li_buffer) - count,
 			li_template,
+			host,
 			compose_path(path, ent->d_name),
 			ent->d_name);
 
@@ -132,8 +133,13 @@ plxr_serve_dir(struct plxr_connection *conn, char *path, DIR *dir)
 {
 	char data[4096];
 	int data_len;
+	char *host;
 
-	data_len = plxr_render_dir_html(data, sizeof(data), path, dir);
+	host = plxr_http_header(&conn->request, "Host");
+	if (host == NULL)
+		return -1; /* missing `Host` header, should 400 */
+
+	data_len = plxr_render_dir_html(data, sizeof(data), path, dir, host);
 
 	if (data_len < 0)
 		return data_len;

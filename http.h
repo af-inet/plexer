@@ -40,6 +40,10 @@ int plxr_http_parse(struct plxr_http_request *dest, char *src);
  */
 void plxr_http_print(struct plxr_http_request *req);
 
+/* Returns the value of a header on success or NULL on failure.
+ */
+char *plxr_http_header(struct plxr_http_request *req, char *key);
+
 /* Unescapes a url at `src`, writing it to `dest`, no more than `count` bytes.
  * ex. "https%3A%2F%2Fwww.google.com%2F" -> "https://www.google.com/"
  *

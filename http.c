@@ -357,6 +357,14 @@ int plxr_http_parse(struct plxr_http_request *dest, char *src) {
 	return plxr_http_parse_end(src);
 }
 
+char *plxr_http_header(struct plxr_http_request *req, char *key) {
+	size_t i;
+	for (i=0; i<req->headers_len; i++)
+		if (strcmp(req->headers[i].key, key) == 0)
+			return req->headers[i].value;
+	return NULL;
+}
+
 void plxr_http_print(struct plxr_http_request *req) {
 	size_t i;
 
