@@ -67,12 +67,12 @@ nftw_cb(const char *name, const struct stat *ptr, int flag, struct FTW *sftw)
 }
 
 int
-plxr_in_dir_recursive(char *dirname, char *filename)
+plxr_in_dir_recursive(char *filename)
 {
 	nftw_cb_result = 1; /* will be set to `0` if the file is found */
 	nftw_cb_parameter = filename;
 
-	if (nftw(dirname, &nftw_cb, 1, FTW_PHYS | FTW_MOUNT) == -1)
+	if (nftw(".", &nftw_cb, 1, FTW_PHYS | FTW_MOUNT) == -1)
 	{
 		return -1;
 	}
@@ -81,22 +81,31 @@ plxr_in_dir_recursive(char *dirname, char *filename)
 }
 
 int
-plxr_check_dir(char *dirname, DIR *dir, char *path)
+plxr_check_path(char *path)
 {
 	struct stat info;
 
-	switch (plxr_in_dir_recursive(dirname, path))
+	if (stat(path, &info) != 0)
+		return PLX_FILE_ERR;
+
+	if (S_ISREG(info.st_mode))
+		return PLX_FILE_REG;
+
+	if (S_ISDIR(info.st_mode))
+		return PLX_FILE_DIR;
+
+	return PLX_FILE_NOT_FOUND;
+}
+
+int
+plxr_check_dir(DIR *dir, char *path)
+{
+	switch (plxr_in_dir_recursive(path))
 	{
 	case 0:
-		if (stat(path, &info) != 0)
-			return PLX_FILE_ERR;
-		if (S_ISREG(info.st_mode))
-			return PLX_FILE_REG;
-		if (S_ISDIR(info.st_mode))
-			return PLX_FILE_DIR;
+		return plxr_check_path(path);
 	case 1:
 		return PLX_FILE_NOT_FOUND;
-	case -1:
 	default:
 		break;
 	}
@@ -114,9 +123,9 @@ plxr_in_dir(DIR *dir, char *filename)
 			continue; /* exclude "." */
 		if (strcmp(ent->d_name, "..") == 0)
 			continue; /* exclude ".." */
-		if (strcmp(filename, ent->d_name) == 0)
-			return 0; /* file found */
+		if (strcmp(ent->d_name, filename) == 0)
+			return plxr_check_path(ent->d_name);
 	}
 
-	return 1; /* file not found */
+	return PLX_FILE_NOT_FOUND;
 }

@@ -19,7 +19,7 @@ plxr_in_dir(DIR *dir, char *filename);
  * returns -1 on error
  */
 int
-plxr_in_dir_recursive(char *dirname, char *filename);
+plxr_in_dir_recursive(char *filename);
 
 enum {
 	PLX_FILE_ERR = -1,
@@ -29,6 +29,6 @@ enum {
 };
 
 int
-plxr_check_dir(char *dirname, DIR *dir, char *path);
+plxr_check_dir(DIR *dir, char *path);
 
 #endif /* PLXR_FILE_H */

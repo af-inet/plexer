@@ -149,6 +149,98 @@ plxr_serve_dir(struct plxr_connection *conn, char *path, DIR *dir)
 	return plxr_serve_data(conn, 200, data, data_len);
 }
 
+char *
+uri_normalize(char *uri)
+{
+	char *start, *ptr;
+	start = uri;
+
+	/* cut preceding slashes */
+	while (*uri == '/') {
+		uri += 1;
+	}
+
+	/* skip to the end */
+	ptr = uri;
+	while (*ptr != '\0') {
+		ptr += 1;
+	}
+
+	/* sweep up the trailing slashes */
+	while (--ptr > start) {
+		if (*ptr == '/') {
+			*ptr = '\0';
+		} else {
+			break;
+		}
+	}
+
+	return uri;
+}
+
+char *
+plxr_append_strings(char *a, char *b)
+{
+	static char buf[512];
+	bzero(buf, sizeof(buf));
+
+	if (snprintf(buf, sizeof(buf), "%s%s", a, b) > sizeof(buf))
+		return NULL; /* out of memory */
+
+	return buf;
+}
+
+/* Takes a URI and figures out a filepath
+ * to serve, or NULL for 404.
+ */
+char *
+plxr_router(int *filetype, DIR *dir, char *uri)
+{
+	char *filename;
+
+	if (uri == NULL)
+		return NULL;
+	if (uri[0] == '\0')
+		return NULL; /* empty string */
+
+	/* special case for root */
+	if (strcmp(uri, "/") == 0) {
+		if (plxr_check_dir(dir, "index.html") == PLX_FILE_REG) {
+			*filetype = PLX_FILE_REG;
+			return "index.html"; /* serve index.html */
+		} else {
+			*filetype = PLX_FILE_DIR;
+			return "."; /* serve the current directory */
+		}
+	}
+
+	/* clean up preceding and trailing slashes */
+	uri = uri_normalize(uri);
+	if (uri == NULL)
+		return NULL;
+
+	*filetype = plxr_check_dir(dir, uri);
+	switch (*filetype)
+	{
+	case PLX_FILE_REG:
+		return uri;
+	case PLX_FILE_DIR:
+		/* if it's a directory, check for an index.html */
+		filename = plxr_append_strings(uri, "/index.html");
+		if (filename &&
+			(plxr_check_dir(dir, filename) == PLX_FILE_REG)) {
+			*filetype = PLX_FILE_REG;
+			return filename; /* found an index.html in this folder */
+		}
+		return uri;
+	case PLX_FILE_ERR:
+	case PLX_FILE_NOT_FOUND:
+		break;
+	}
+
+	return NULL; /* TODO: we're losing error information here (PLX_FILE_ERR) */
+}
+
 /* TODO this is the messiest function, would be nice to clean it up
  * with some better url parsing.
  */
@@ -156,59 +248,44 @@ int
 plxr_serve_file_or_dir(struct plxr_connection *conn)
 {
 	DIR *dir;
-	int ret;
-	int dir_type;
-	size_t len;
-	char path_buffer[256] = {0};
 	char *path;
-	char *ptr;
+	char buf[256] = {0};
+	int ret;
+	int filetype;
 
-	ptr = stpncpy(path_buffer, conn->request.uri, sizeof(path_buffer));
-	path = path_buffer;
+	/* copy the uri into a buffer */
+	strncpy(buf, conn->request.uri, sizeof(buf));
 
-	/* `ptr` points to the null terminator, lets roll that back */
-	ptr -= 1;
-	/* cut trailing slashes */
-	for (; (ptr > path_buffer) && ((*ptr) == '/'); --ptr) {
-		*ptr = '\0';
-	}
-
-	/* serve the current directory */
-	if (strcmp("/", path) == 0)
-	{
-		dir = opendir(".");
-		ret = plxr_serve_dir(conn, "", dir);
+	if (( dir = opendir(".") )) {
+		path = plxr_router(&filetype, dir, buf);
 		closedir(dir);
-		return ret;
+	} else {
+		return -1;
+	}
+	/* if no file was found, 404 */
+	if (path == NULL) {
+		return plxr_serve_string(conn, 404, plxr_html_404);
 	}
 
-	/* get rid of the leading '/' (for comparison) */
-	len = strlen(path) ;
-	if (len > 0)
-	{
-		path = path + 1;
-	}
-
-	/* (recursively) check the current directory for this file */
-	dir = opendir(".");
-	dir_type = plxr_check_dir(".", dir, path);
-	closedir(dir);
-
-	switch (dir_type)
+	switch (filetype)
 	{
 	case PLX_FILE_REG:
 		return plxr_serve_file(conn, 200, path);
 	case PLX_FILE_DIR:
-		dir = opendir(path);
-		ret = plxr_serve_dir(conn, path, dir);
-		closedir(dir);
+		/* if its a directory, open it up and render it into an html page */
+		if (( dir = opendir(path) )) {
+			ret = plxr_serve_dir(conn, path, dir);
+			closedir(dir);
+		} else {
+			return -1;
+		}
 		return ret;
 	case PLX_FILE_NOT_FOUND:
 		return plxr_serve_string(conn, 404, plxr_html_404);
 	case PLX_FILE_ERR:
 		return plxr_serve_string(conn, 500, plxr_html_500);
 	default:
-		return plxr_serve_string(conn, 500, plxr_html_500);
+		break;
 	}
 	return plxr_serve_string(conn, 500, plxr_html_500);
 }
