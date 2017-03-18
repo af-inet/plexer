@@ -57,12 +57,17 @@ plxr_serve_file(
 {
 	char *data;
 	off_t data_len;
+	int ret;
 
-	data = plxr_alloc_file(filename, &data_len);
+	data = plxr_alloc_file(filename, &data_len); /* dynamically allocated */
 	if (data == NULL)
 		return PLX_ALLOC_FILE_FAILED;
 
-	return plxr_serve_data(conn, status_code, data, data_len);
+	ret = plxr_serve_data(conn, status_code, data, data_len);
+
+	free(data); /* don't leak memory */
+
+	return ret;
 }
 
 int
