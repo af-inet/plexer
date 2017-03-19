@@ -2,13 +2,13 @@
 
 `plexer` is a lil C http server created for fun :)
 
-right now, `plexer` will serve your current directory, folders are rendered as html lists.
-
 ## usage
 
 ```
-plexer [-h] [-p port]
+plexer [-hv] [-p port]
 ```
+
+`plexer` always serves your current directory.
 
 example:
 
