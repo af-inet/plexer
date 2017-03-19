@@ -7,7 +7,7 @@ HEADERS =        socket.h http.h file.h server.h connection.h error.h
 # where plexer will be installed
 INSTALL_DEST = /usr/local/bin
 
-.PHONY: default all clean test
+.PHONY: default all clean test install uninstall
 
 default: all
 all: $(TARGET) $(OBJ) test
