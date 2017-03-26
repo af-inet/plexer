@@ -21,10 +21,105 @@ static const char *plxr_html_404 =
 static const char *plxr_html_500 =
 "<html><head></head><body><h1>internal server error</h1></body></html>";
 
+const char *
+extension_from_path(char *path)
+{
+	char *ptr = path;
+
+	/* skip to the end */
+	while (*ptr != '\0') {
+		ptr += 1;
+	}
+
+	while (ptr > path) {
+		ptr -= 1;
+		if (*ptr == '.') {
+			return ptr+1;
+		}
+	}
+
+	return NULL;
+}
+
+#define ENTRY(a,b) \
+	(const char *[2]){a, b}
+
+static const char **extension_table[] =
+{
+	ENTRY("au", "audio/basic"),
+	ENTRY("avi", "video/avi"),
+	ENTRY("bmp", "image/bmp"),
+	ENTRY("bz2", "application/x-bzip2"),
+	ENTRY("css", "text/css"),
+	ENTRY("dtd", "application/xml-dtd"),
+	ENTRY("doc", "application/msword"),
+	ENTRY("exe", "application/octet-stream"),
+	ENTRY("gif", "image/gif"),
+	ENTRY("gz", "application/x-gzip"),
+	ENTRY("hqx", "application/mac-binhex40"),
+	ENTRY("html", "text/html"),
+	ENTRY("jar", "application/java-archive"),
+	ENTRY("jpg", "image/jpeg"),
+	ENTRY("js", "application/x-javascript"),
+	ENTRY("midi", "audio/x-midi"),
+	ENTRY("mp3", "audio/mpeg"),
+	ENTRY("mpeg", "video/mpeg"),
+	ENTRY("ogg", "application/ogg"),
+	ENTRY("pdf", "application/pdf"),
+	ENTRY("pl", "application/x-perl"),
+	ENTRY("png", "image/png"),
+	ENTRY("ppt", "application/vnd.ms-powerpoint"),
+	ENTRY("ps", "application/postscript"),
+	ENTRY("qt", "video/quicktime"),
+	ENTRY("ra", "audio/vnd.rn-realaudio"),
+	ENTRY("ram", "audio/vnd.rn-realaudio"),
+	ENTRY("rdf", "application/rdf"),
+	ENTRY("rtf", "application/rtf"),
+	ENTRY("sgml", "text/sgml"),
+	ENTRY("sit", "application/x-stuffit"),
+	ENTRY("svg", "image/svg+xml"),
+	ENTRY("swf", "application/x-shockwave-flash"),
+	ENTRY("tar.gz", "application/x-tar"),
+	ENTRY("tgz", "application/x-tar"),
+	ENTRY("tiff", "image/tiff"),
+	ENTRY("tsv", "text/tab-separated-values"),
+	ENTRY("txt", "text/plain"),
+	ENTRY("c", "text/plain"),
+	ENTRY("h", "text/plain"),
+	ENTRY("md", "text/plain"),
+	ENTRY("wav", "audio/wav"),
+	ENTRY("xls", "application/vnd.ms-excel"),
+	ENTRY("xml", "application/xml"),
+	ENTRY("zip", "application/zip"),
+	NULL
+};
+#undef ENTRY
+
+const char *
+content_type_from_path(char *path)
+{
+	const char *ext;
+	const char **entry;
+	size_t i;
+
+	ext = extension_from_path(path);
+
+	if (ext != NULL) {
+		for (i = 0; (entry = extension_table[i]); i++) {
+			if (strcmp(entry[0], ext) == 0) {
+				return entry[1];
+			}
+		}
+	}
+
+	return "text/plain"; /* if there's no extension, assume it's text. */
+}
+
 int
 plxr_serve_data(
 	struct plxr_connection *conn,
 	int status_code,
+	const char *content_type,
 	const char *data,
 	size_t data_len)
 {
@@ -33,7 +128,7 @@ plxr_serve_data(
 	int ret;
 
 	headers_len = plxr_http_response(
-		headers, sizeof(headers), status_code, "text/html", data_len);
+		headers, sizeof(headers), status_code, content_type, data_len);
 
 	if (headers_len > sizeof(headers))
 		return PLX_OUT_OF_MEMORY;
@@ -58,12 +153,16 @@ plxr_serve_file(
 	char *data;
 	off_t data_len;
 	int ret;
+	const char *content_type;
 
 	data = plxr_alloc_file(filename, &data_len); /* dynamically allocated */
 	if (data == NULL)
 		return PLX_ALLOC_FILE_FAILED;
 
-	ret = plxr_serve_data(conn, status_code, data, data_len);
+	content_type = content_type_from_path(filename);
+
+	ret = plxr_serve_data(
+		conn, status_code, content_type, data, data_len);
 
 	free(data); /* don't leak memory */
 
@@ -74,9 +173,10 @@ int
 plxr_serve_string(
 	struct plxr_connection *conn,
 	int status_code,
+	const char *content_type,
 	const char *str)
 {
-	return plxr_serve_data(conn, status_code, str, strlen(str));
+	return plxr_serve_data(conn, status_code, content_type, str, strlen(str));
 }
 
 static char path_buffer[1024];
@@ -151,7 +251,7 @@ plxr_serve_dir(struct plxr_connection *conn, char *path, DIR *dir)
 	if (data_len > sizeof(data))
 		return PLX_OUT_OF_MEMORY;
 
-	return plxr_serve_data(conn, 200, data, data_len);
+	return plxr_serve_data(conn, 200, "text/html", data, data_len);
 }
 
 char *
@@ -269,7 +369,7 @@ plxr_serve_file_or_dir(struct plxr_connection *conn)
 	}
 	/* if no file was found, 404 */
 	if (path == NULL) {
-		return plxr_serve_string(conn, 404, plxr_html_404);
+		return plxr_serve_string(conn, 404, "text/html", plxr_html_404);
 	}
 
 	switch (filetype)
@@ -286,12 +386,12 @@ plxr_serve_file_or_dir(struct plxr_connection *conn)
 		}
 		return ret;
 	case PLX_FILE_NOT_FOUND:
-		return plxr_serve_string(conn, 404, plxr_html_404);
+		return plxr_serve_string(conn, 404, "text/html", plxr_html_404);
 	case PLX_FILE_ERR:
-		return plxr_serve_string(conn, 500, plxr_html_500);
+		return plxr_serve_string(conn, 500, "text/html", plxr_html_500);
 	default:
 		break;
 	}
-	return plxr_serve_string(conn, 500, plxr_html_500);
+	return plxr_serve_string(conn, 500, "text/html", plxr_html_500);
 }
 
