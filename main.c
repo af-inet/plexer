@@ -106,23 +106,23 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		if (opts.verbose)
-			printf("[*] client connected %s\n", plxr_socket_ntop(&conn.addr));
-
-		ret = plxr_connection_read(&conn);
-
-		if (ret) {
-			if (opts.verbose) {
-				printf("[!] plxr error: %s\n", plxr_strerror(ret));
-			}
-		}
-		else {
+		printf("[*] client connected %s\n", plxr_socket_ntop(&conn.addr));
+		while ((ret = plxr_connection_read(&conn)) == 0)
+		{
 			ret = plxr_serve_file_or_dir(&conn);
-			if (ret) {
+			if (ret == 0) {
+				// TODO: this probably isn't very safe since uri is user input.
+				printf("[*]\tserved: [%s]\n", conn.request.uri);
+			} else {
 				if (opts.verbose) {
 					printf("[!] plxr error: %s\n", plxr_strerror(ret));
 				}
 			}
+		}
+
+		if (opts.verbose && (ret != PLX_READ_TIMEOUT)) {
+			// TODO: PLX_READ_TIMEOUT isn't neccesarily an error, maybe refactor it from the error codes list...
+			printf("[!] plxr error: %s\n", plxr_strerror(ret));
 		}
 
 		shutdown(conn.fd, SHUT_RDWR);
