@@ -23,7 +23,7 @@ struct plxr_http_request {
 int plxr_http_response(
 	char *dest, size_t size,
 	int status_code,
-	char *content_type,
+	const char *content_type,
 	int content_length
 );
 
