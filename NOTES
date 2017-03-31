@@ -1,10 +1,9 @@
 TODO
   - better error handling + logging
-  - timestamp
-    - "very verbose" mode for logging even more non-errors
   - url parsing
   - concurrency (again)
   - some sort of versioning / release system
+  - remove timeout from error codes
 
 NOTES
   - we use lots of static buffer when string parsing, this gets kind of messy because
@@ -21,3 +20,8 @@ NOTES
       - TODO :)
 
     - EOF is now handled (when read(2) returns 0)
+
+    - logs now follows logstalgia format: 1371769989|127.0.0.1|/index.html|200|1024
+
+    - see: http://logstalgia.io/
+

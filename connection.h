@@ -2,6 +2,7 @@
 #define PLXR_CONNECTION_H
 
 #include <arpa/inet.h>
+#include <time.h>
 
 #include "http.h"
 
@@ -9,6 +10,11 @@ struct plxr_connection {
 	int fd;
 	struct sockaddr addr;
 	struct plxr_http_request request;
+
+	/* currently only used for logging */
+	int     resp_status_code;
+	time_t  resp_timestamp;
+	size_t  resp_len;
 };
 
 /* Reads from a socket and attempts to parse the http request.

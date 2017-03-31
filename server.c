@@ -136,10 +136,15 @@ plxr_serve_data(
 	ret = plxr_socket_write_timeout(conn->fd, headers, headers_len, 250);
 	if (ret != headers_len)
 		return ret;
+	conn->resp_len += ret;
 
 	ret = plxr_socket_write_timeout(conn->fd, data, data_len, 250);
 	if (ret != data_len)
 		return ret;
+	conn->resp_len += ret;
+
+	conn->resp_status_code = status_code;
+	conn->resp_timestamp   = time(NULL);
 
 	return 0;
 }

@@ -8,6 +8,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <time.h>
 
 #include "server.h"
 #include "socket.h"
@@ -106,13 +107,22 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		printf("[*] client connected %s\n", plxr_socket_ntop(&conn.addr));
 		while ((ret = plxr_connection_read(&conn)) > 0)
 		{
 			ret = plxr_serve_file_or_dir(&conn);
 			if (ret == 0) {
-				// TODO: this probably isn't very safe since uri is user input.
-				printf("[*]\tserved: [%s]\n", conn.request.uri);
+
+				/* TODO: this probably isn't very safe since uri is user input.
+				 * also these are logstalgia compatible logs :)
+				 */
+				if (opts.verbose)
+					printf("%lu|%s|%s|%d|%lu\n",
+						conn.resp_timestamp,
+						plxr_socket_ntop(&conn.addr),
+						conn.request.uri,
+						conn.resp_status_code,
+						conn.resp_len);
+
 			} else {
 				if (opts.verbose) {
 					printf("[!] plxr error: %s\n", plxr_strerror(ret));
