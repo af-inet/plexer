@@ -1,8 +1,9 @@
 TARGET  = plexer
 CC      = gcc
-CFLAGS  = -g -Wall -I. -Wno-initializer-overrides
+COMMIT  = $(shell git rev-parse HEAD)
+CFLAGS  = -g -Wall -I. -Wno-initializer-overrides -D PLXR_COMMIT_HASH=$(COMMIT)
 OBJ     = main.o socket.o http.o file.o server.o connection.o error.c
-HEADERS =        socket.h http.h file.h server.h connection.h error.h
+HEADERS =        socket.h http.h file.h server.h connection.h error.h version.h
 
 # where plexer will be installed
 INSTALL_DEST = /usr/local/bin

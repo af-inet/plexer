@@ -14,6 +14,7 @@
 #include "socket.h"
 #include "connection.h"
 #include "error.h"
+#include "version.h"
 
 struct options {
 	char *port;
@@ -88,14 +89,17 @@ int main(int argc, char *argv[])
 	/* disable buffered output */
 	setvbuf(stdout, NULL, _IONBF, 0);
 
+
 	listen_fd = plxr_socket_listen(&listen_addr, port);
 	if (listen_fd == -1) {
 		perror("plxr_socket_listen");
 		return 1;
 	}
 
-	if (opts.verbose)
+	if (opts.verbose) {
+		printf("[*] version: %s\n", PLXR_VERSION_STRING);
 		printf("[*] listening on port: %d\n", port);
+	}
 
 	do {
 		bzero(&conn, sizeof(conn));
