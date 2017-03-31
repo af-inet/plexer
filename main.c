@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 		}
 
 		printf("[*] client connected %s\n", plxr_socket_ntop(&conn.addr));
-		while ((ret = plxr_connection_read(&conn)) == 0)
+		while ((ret = plxr_connection_read(&conn)) > 0)
 		{
 			ret = plxr_serve_file_or_dir(&conn);
 			if (ret == 0) {
@@ -120,7 +120,9 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (opts.verbose && (ret != PLX_READ_TIMEOUT)) {
+		if (opts.verbose
+			&& (ret < 0)
+			&& (ret != PLX_READ_TIMEOUT)) {
 			// TODO: PLX_READ_TIMEOUT isn't neccesarily an error, maybe refactor it from the error codes list...
 			printf("[!] plxr error: %s\n", plxr_strerror(ret));
 		}

@@ -240,6 +240,7 @@ const char *plxr_http_phrase(int status_code) {
 const char *HTTP_RESP_FORMAT =
 	"HTTP/1.1 %d %s\r\n"
 	"Content-Type: %s\r\n"
+	// "Connection: close\r\n" // Don't reuse connections (good way to test EOF handling).
 	"Content-Length: %d\r\n"
 	"\r\n"
 ;

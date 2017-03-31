@@ -1,6 +1,7 @@
 TODO
-  - handle EOF
   - better error handling + logging
+  - timestamp
+    - "very verbose" mode for logging even more non-errors
   - url parsing
   - concurrency (again)
   - some sort of versioning / release system
@@ -18,3 +19,5 @@ NOTES
 
     - If `connection` IS set to close, clients will properly indicate an EOF (writing 0 bytes), and we haven't handled this yet
       - TODO :)
+
+    - EOF is now handled (when read(2) returns 0)

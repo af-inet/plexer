@@ -11,6 +11,9 @@ struct plxr_connection {
 	struct plxr_http_request request;
 };
 
+/* Reads from a socket and attempts to parse the http request.
+ * returns the number of bytes read on success or less than zero on failure.
+ */
 int
 plxr_connection_read(struct plxr_connection *conn);
 

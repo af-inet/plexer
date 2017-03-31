@@ -19,11 +19,11 @@ plxr_connection_read(struct plxr_connection *conn)
 	ret = plxr_socket_read_timeout(
 		conn->fd, request_buffer, sizeof(request_buffer), 500);
 
-	if (ret < 0)
-		return ret; /* read failed */
+	if (ret <= 0)
+		return ret; /* read failed or was empty; don't bother parsing */
 	if (plxr_http_parse(&conn->request, request_buffer) == 0)
 		return PLX_PARSE_FAILED; /* parse failed */
 
-	return 0;
+	return ret; /* success; return the number of bytes read */
 }
 
