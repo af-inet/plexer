@@ -12,13 +12,13 @@
 #include "file.h"
 
 char *
-plxr_alloc_file(const char *filename, off_t *size)
+plxr_alloc_file(const char *path, off_t *size)
 {
 	struct stat info;
 	char *buffer;
 	int fd;
 
-	if ((fd = open(filename, O_RDONLY)) == -1)
+	if ((fd = open(path, O_RDONLY)) == -1)
 		goto error_exit;
 
 	if ((fstat(fd, &info) != 0))
@@ -43,89 +43,82 @@ error_exit:
 	return NULL;
 }
 
-static int nftw_cb_result;
-static char *nftw_cb_parameter;
+/* ftw(3) forces you to use global variables to share state with the callback
+ * so the first thing we do is implement a wrapper with a shared void* pointer.
+ */
+void *plxr_nftw_ptr = NULL;
+int (*plxr_nftw_cb)(const char *, const struct stat *, int, struct FTW *, void *) = NULL;
 
 int
-nftw_cb(const char *name, const struct stat *ptr, int flag, struct FTW *sftw)
+plxr_nftw_cb_wrapper(const char *_path, const struct stat *_stat, int _flag, struct FTW *_ftw)
 {
-	if ( (flag==FTW_F) || (flag==FTW_D))
-	{
-		if (strcmp(name, ".") == 0)
-			return 0; /* exclude "." */
-
-		name += 2; /* cut of the leading "./" */
-
-		if (strcmp(name, nftw_cb_parameter) == 0)
-		{
-			nftw_cb_result = 0;
-			return 1; /* found what we're looking for, exit */
-		}
-	}
-
-	return 0;
+	return plxr_nftw_cb(_path, _stat, _flag, _ftw, plxr_nftw_ptr);
 }
 
 int
-plxr_in_dir_recursive(char *filename)
+plxr_nftw(
+	const char *path,
+	int (*cb)(const char *, const struct stat *stat_ptr, int flag, struct FTW *, void *ptr), /* TODO TYPE */
+	int depth,
+	int flags,
+	void *ptr)
 {
-	nftw_cb_result = 1; /* will be set to `0` if the file is found */
-	nftw_cb_parameter = filename;
-
-	if (nftw(".", &nftw_cb, 1, FTW_PHYS | FTW_MOUNT) == -1)
-	{
-		return -1;
-	}
-
-	return nftw_cb_result;
+	plxr_nftw_cb = cb;
+	plxr_nftw_ptr = ptr;
+	return nftw(path, &plxr_nftw_cb_wrapper, depth, flags);
 }
 
-int
-plxr_check_path(char *path)
-{
-	struct stat info;
 
-	if (stat(path, &info) != 0)
+/* Now we define a context struct to pass into our callback.
+ */
+
+struct plxr_stat_ctx {
+	char *path; /* passed in to ntfw cb */
+	plxr_filetype_t type; /* will be overwritten if a file is found */
+};
+
+int
+plxr_stat_cb(const char *path, const struct stat *stat_ptr, int flag, struct FTW *ftw_ptr, void *ptr)
+{
+	struct plxr_stat_ctx *ctx = (struct plxr_stat_ctx *)ptr;
+
+	/* We only care about regular files and directories for now. */
+	if ((flag != FTW_F)
+		&& (flag != FTW_D)) {
+		return 0; /* nftw continue */
+	}
+
+	 /* Cut the leading "./" */
+	if (path[0] == '.'
+		&& path[1] == '/') {
+		path += 2;
+	}
+
+	if (strcmp(path, ctx->path) == 0) {
+		/* We have a match! */
+		if (flag == FTW_F)
+			ctx->type = PLX_FILE_REG;
+		if (flag == FTW_D)
+			ctx->type = PLX_FILE_DIR;
+		return 1; /* nftw break */
+	}
+
+	return 0; /* nftw continue */
+}
+
+/* current directory stat:
+ * finds a file in the current directory.
+ */
+plxr_filetype_t
+plxr_stat(char *path)
+{
+	struct plxr_stat_ctx ctx = {
+		.path = path,
+		.type = PLX_FILE_NOT_FOUND
+	};
+
+	if (plxr_nftw(".", &plxr_stat_cb, 1, FTW_PHYS | FTW_MOUNT,  &ctx) == -1)
 		return PLX_FILE_ERR;
 
-	if (S_ISREG(info.st_mode))
-		return PLX_FILE_REG;
-
-	if (S_ISDIR(info.st_mode))
-		return PLX_FILE_DIR;
-
-	return PLX_FILE_NOT_FOUND;
-}
-
-int
-plxr_check_dir(DIR *dir, char *path)
-{
-	switch (plxr_in_dir_recursive(path))
-	{
-	case 0:
-		return plxr_check_path(path);
-	case 1:
-		return PLX_FILE_NOT_FOUND;
-	default:
-		break;
-	}
-	return PLX_FILE_ERR;
-}
-
-int
-plxr_in_dir(DIR *dir, char *filename)
-{
-	struct dirent *ent;
-
-	while (( ent = readdir(dir) ))
-	{
-		if (strcmp(ent->d_name, ".") == 0)
-			continue; /* exclude "." */
-		if (strcmp(ent->d_name, "..") == 0)
-			continue; /* exclude ".." */
-		if (strcmp(ent->d_name, filename) == 0)
-			return plxr_check_path(ent->d_name);
-	}
-
-	return PLX_FILE_NOT_FOUND;
+	return ctx.type;
 }

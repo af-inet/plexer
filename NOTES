@@ -6,6 +6,11 @@ TODO
   - remove timeout from error codes
 
 NOTES
+
+  - Ah, managing directory objects is annoying. maybe there's a better way
+
+  - the way uri are mapped to filenames works, but it feels pretty hacky
+
   - we use lots of static buffer when string parsing, this gets kind of messy because
     at any given moment there are a ton of static buffer lying around not being used,
     wasting memory.... would be nice to have a single buffer where all string manipulation happens,

@@ -8,27 +8,14 @@
 char *
 plxr_alloc_file(const char *filename, off_t *size);
 
-/* returns 0 if directory `dirname` contains file `filename`
- * returns 1 if it does not
- */
-int
-plxr_in_dir(DIR *dir, char *filename);
-
-/* returns 0 if directory `dirname` contains file `filename`
- * returns 1 if it does not
- * returns -1 on error
- */
-int
-plxr_in_dir_recursive(char *filename);
-
-enum {
+typedef enum {
 	PLX_FILE_ERR = -1,
 	PLX_FILE_REG = 1,
 	PLX_FILE_DIR = 2,
 	PLX_FILE_NOT_FOUND = 3
-};
+} plxr_filetype_t;
 
-int
-plxr_check_dir(DIR *dir, char *path);
+plxr_filetype_t
+plxr_stat(char *path);
 
 #endif /* PLXR_FILE_H */

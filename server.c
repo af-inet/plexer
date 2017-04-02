@@ -262,8 +262,7 @@ plxr_serve_dir(struct plxr_connection *conn, char *path, DIR *dir)
 char *
 uri_normalize(char *uri)
 {
-	char *start, *ptr;
-	start = uri;
+	char *ptr;
 
 	/* cut preceding slashes */
 	while (*uri == '/') {
@@ -276,8 +275,8 @@ uri_normalize(char *uri)
 		ptr += 1;
 	}
 
-	/* sweep up the trailing slashes */
-	while (--ptr > start) {
+	/* sweep up the trailing slashes, excluding the first */
+	while (--ptr > (uri + 1)) {
 		if (*ptr == '/') {
 			*ptr = '\0';
 		} else {
@@ -304,51 +303,42 @@ plxr_append_strings(char *a, char *b)
  * to serve, or NULL for 404.
  */
 char *
-plxr_router(int *filetype, DIR *dir, char *uri)
+plxr_router(int *filetype, char *uri)
 {
 	char *filename;
 
-	if (uri == NULL)
+	if (uri == NULL) {
+		*filetype = PLX_FILE_NOT_FOUND;
 		return NULL;
-	if (uri[0] == '\0')
-		return NULL; /* empty string */
-
-	/* special case for root */
-	if (strcmp(uri, "/") == 0) {
-		if (plxr_check_dir(dir, "index.html") == PLX_FILE_REG) {
-			*filetype = PLX_FILE_REG;
-			return "index.html"; /* serve index.html */
-		} else {
-			*filetype = PLX_FILE_DIR;
-			return "."; /* serve the current directory */
-		}
 	}
 
-	/* clean up preceding and trailing slashes */
-	uri = uri_normalize(uri);
-	if (uri == NULL)
-		return NULL;
+	/* since "/" was cut, empty string here means "/", which we map to the current directory */
+	if (strcmp(uri, "") == 0)
+		uri = ".";
 
-	*filetype = plxr_check_dir(dir, uri);
+	*filetype = plxr_stat(uri);
 	switch (*filetype)
 	{
+
 	case PLX_FILE_REG:
 		return uri;
+
 	case PLX_FILE_DIR:
 		/* if it's a directory, check for an index.html */
 		filename = plxr_append_strings(uri, "/index.html");
 		if (filename &&
-			(plxr_check_dir(dir, filename) == PLX_FILE_REG)) {
+			(plxr_stat(filename) == PLX_FILE_REG)) {
 			*filetype = PLX_FILE_REG;
 			return filename; /* found an index.html in this folder */
 		}
 		return uri;
+
 	case PLX_FILE_ERR:
 	case PLX_FILE_NOT_FOUND:
 		break;
 	}
 
-	return NULL; /* TODO: we're losing error information here (PLX_FILE_ERR) */
+	return NULL;
 }
 
 /* TODO this is the messiest function, would be nice to clean it up
@@ -360,40 +350,37 @@ plxr_serve_file_or_dir(struct plxr_connection *conn)
 	DIR *dir;
 	char *path;
 	char buf[256] = {0};
+	char *uri;
 	int ret;
 	int filetype;
 
-	/* copy the uri into a buffer */
+	/* Buffer for processing the uri. */
 	strncpy(buf, conn->request.uri, sizeof(buf));
 
-	if (( dir = opendir(".") )) {
-		path = plxr_router(&filetype, dir, buf);
-		closedir(dir);
-	} else {
-		return -1;
-	}
-	/* if no file was found, 404 */
-	if (path == NULL) {
-		return plxr_serve_string(conn, 404, "text/html", plxr_html_404);
-	}
+	/* Clean up preceding and trailing slashes (not part of the spec, just a design choice). */
+	uri = uri_normalize(buf);
+
+	/* Map the uri to a file path, if one is found. */
+	path = plxr_router(&filetype, uri);
 
 	switch (filetype)
 	{
 	case PLX_FILE_REG:
 		return plxr_serve_file(conn, 200, path);
+
 	case PLX_FILE_DIR:
-		/* if its a directory, open it up and render it into an html page */
-		if (( dir = opendir(path) )) {
-			ret = plxr_serve_dir(conn, path, dir);
-			closedir(dir);
-		} else {
+		/* open up the directory and render it into an html page */
+		if ((dir = opendir(path)) == NULL) {
 			return -1;
 		}
+		ret = plxr_serve_dir(conn, path, dir);
+		closedir(dir);
 		return ret;
+
 	case PLX_FILE_NOT_FOUND:
 		return plxr_serve_string(conn, 404, "text/html", plxr_html_404);
-	case PLX_FILE_ERR:
-		return plxr_serve_string(conn, 500, "text/html", plxr_html_500);
+
+	case PLX_FILE_ERR: /* fallthrough */
 	default:
 		break;
 	}
