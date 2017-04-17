@@ -1,7 +1,7 @@
 TARGET  = plexer
 CC      = gcc
 COMMIT  = $(shell git rev-parse HEAD)
-CFLAGS  = -g -Wall -I. -Wno-initializer-overrides -D PLXR_COMMIT_HASH=$(COMMIT)
+CFLAGS  = -Wall -I. -Wno-initializer-overrides -D PLXR_COMMIT_HASH=$(COMMIT)
 OBJ     = main.o socket.o http.o file.o server.o connection.o error.c
 HEADERS =        socket.h http.h file.h server.h connection.h error.h version.h
 
@@ -40,5 +40,5 @@ debug: $(OBJ)
 clean:
 	$(RM) *.o
 	$(RM) $(TARGET)-debug
-	$(RM) $(TARGET)-debug.dSYM
+	$(RM) -r $(TARGET)-debug.dSYM
 	$(RM) $(TARGET)
