@@ -324,8 +324,13 @@ plxr_router(int *filetype, char *uri)
 		return uri;
 
 	case PLX_FILE_DIR:
+
 		/* if it's a directory, check for an index.html */
-		filename = plxr_append_strings(uri, "/index.html");
+		if (strcmp(uri, ".") == 0)
+			filename = "index.html";
+		else
+			filename = plxr_append_strings(uri, "/index.html");
+
 		if (filename &&
 			(plxr_stat(filename) == PLX_FILE_REG)) {
 			*filetype = PLX_FILE_REG;
