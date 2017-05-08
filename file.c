@@ -27,23 +27,23 @@ plxr_alloc_file(const char *path, off_t *size)
 
 	if ((fstat(fd, &info) == -1))
 	{
-		close(fd); /* clean up file descriptor */
 		ERROR("fstat");
+		close(fd); /* clean up file descriptor */
 		return NULL;
 	}
 
 	if ((buffer = malloc(info.st_size + 1)) == NULL)
 	{
-		close(fd);
 		ERROR("malloc");
+		close(fd);
 		return NULL;
 	}
 
 	if ((read(fd, buffer, info.st_size) == -1))
 	{
+		ERROR("read");
 		close(fd);
 		free(buffer); /* clean up this buffer since we're not returning it */
-		ERROR("read");
 		return NULL;
 	}
 
